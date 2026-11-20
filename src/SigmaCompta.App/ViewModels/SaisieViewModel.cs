@@ -253,6 +253,10 @@ namespace SigmaCompta.App.ViewModels
             }
         }
 
+        private string _reference = "";
+        /// <summary>Référence de la ligne (EC_Reference), reprise sur la ligne suivante comme le libellé.</summary>
+        public string ReferenceTexte { get { return _reference; } set { Set(ref _reference, value ?? ""); } }
+
         private string _libelleLigne = "";
         public string LibelleLigne { get { return _libelleLigne; } set { Set(ref _libelleLigne, value ?? ""); } }
 
@@ -290,23 +294,24 @@ namespace SigmaCompta.App.ViewModels
         public bool EnModification { get { return _ligneEnModification != null; } }
         public string LibelleBoutonLigne { get { return _ligneEnModification == null ? "Ajouter" : "Mettre à jour"; } }
 
-        private void ViderChampsLigne(string libelle)
+        private void ViderChampsLigne(string libelle, string reference = "")
         {
             _compte = "";
             _tiersTexte = "";
+            _reference = reference ?? "";
             _libelleLigne = libelle ?? "";
             _echeance = "";
             _debit = "";
             _credit = "";
             _messageLigne = null;
-            NotifierPlusieurs("CompteTexte", "TiersTexte", "LibelleLigne", "EcheanceTexte", "DebitTexte", "CreditTexte", "MessageLigne",
+            NotifierPlusieurs("CompteTexte", "TiersTexte", "ReferenceTexte", "LibelleLigne", "EcheanceTexte", "DebitTexte", "CreditTexte", "MessageLigne",
                               "ApercuLigne", "EnModification", "LibelleBoutonLigne");
         }
 
-        /// <summary>Ligne suivante : comptes vides, même libellé, montant qui équilibre la pièce.</summary>
-        private void PreparerLigneSuivante(string libelle)
+        /// <summary>Ligne suivante : comptes vides, même libellé et même référence, montant qui équilibre la pièce.</summary>
+        private void PreparerLigneSuivante(string libelle, string reference = "")
         {
-            ViderChampsLigne(libelle);
+            ViderChampsLigne(libelle, reference);
             decimal d, c;
             ServiceSaisie.SoldeAProposer(_lignes, out d, out c);
             _debit = d == 0 ? "" : d.ToString("0.##", CultureInfo.CurrentCulture);
@@ -335,7 +340,7 @@ namespace SigmaCompta.App.ViewModels
             if (_referentiel == null) return;
             var saisie = new SaisieLigne
             {
-                Compte = _compte, Tiers = _tiersTexte, Libelle = _libelleLigne,
+                Compte = _compte, Tiers = _tiersTexte, Reference = _reference, Libelle = _libelleLigne,
                 Echeance = _echeance, Debit = _debit, Credit = _credit
             };
             string erreur;
@@ -351,13 +356,13 @@ namespace SigmaCompta.App.ViewModels
             else liste.Add(ligne);
             _ligneEnModification = null;
             DefinirLignes(liste);
-            PreparerLigneSuivante(ligne.Libelle);
+            PreparerLigneSuivante(ligne.Libelle, ligne.Reference);
         }
 
         private void AnnulerLigne()
         {
             _ligneEnModification = null;
-            PreparerLigneSuivante(string.IsNullOrEmpty(_libelleLigne) ? _libellePiece : _libelleLigne);
+            PreparerLigneSuivante(string.IsNullOrEmpty(_libelleLigne) ? _libellePiece : _libelleLigne, _reference);
         }
 
         private void ModifierLigne()
@@ -368,12 +373,13 @@ namespace SigmaCompta.App.ViewModels
             var s = l.VersSaisie();
             _compte = s.Compte ?? "";
             _tiersTexte = s.Tiers ?? "";
+            _reference = s.Reference ?? "";
             _libelleLigne = s.Libelle ?? "";
             _echeance = s.Echeance ?? "";
             _debit = s.Debit ?? "";
             _credit = s.Credit ?? "";
             _messageLigne = null;
-            NotifierPlusieurs("CompteTexte", "TiersTexte", "LibelleLigne", "EcheanceTexte", "DebitTexte", "CreditTexte", "MessageLigne",
+            NotifierPlusieurs("CompteTexte", "TiersTexte", "ReferenceTexte", "LibelleLigne", "EcheanceTexte", "DebitTexte", "CreditTexte", "MessageLigne",
                               "ApercuLigne", "EnModification", "LibelleBoutonLigne");
             CommandeBase.ReevaluerTout();
         }
@@ -384,7 +390,7 @@ namespace SigmaCompta.App.ViewModels
             if (l == null) return;
             if (ReferenceEquals(l, _ligneEnModification)) _ligneEnModification = null;
             DefinirLignes(_lignes.Where(x => !ReferenceEquals(x, l)).ToList());
-            if (_ligneEnModification == null) PreparerLigneSuivante(_libelleLigne);
+            if (_ligneEnModification == null) PreparerLigneSuivante(_libelleLigne, _reference);
         }
 
         // ---------------------------------------------------------------- Suggestions
@@ -682,13 +688,13 @@ namespace SigmaCompta.App.ViewModels
                 liste.Add(new LigneGrille
                 {
                     Jour = l.Date.HasValue ? l.Date.Value.Day.ToString(CultureInfo.CurrentCulture) : "",
-                    Piece = l.Piece, Facture = l.RefPiece, Compte = l.Compte, Tiers = l.CompteTiers, Libelle = l.Libelle,
+                    Piece = l.Piece, Facture = l.RefPiece, Reference = l.Reference, Compte = l.Compte, Tiers = l.CompteTiers, Libelle = l.Libelle,
                     Echeance = l.Echeance, Debit = l.Debit, Credit = l.Credit
                 });
             foreach (var l in _lignes)
                 liste.Add(new LigneGrille
                 {
-                    EnCours = true, Ligne = l, Compte = l.CompteGeneral, Tiers = l.CompteTiers, Libelle = l.Libelle,
+                    EnCours = true, Ligne = l, Reference = l.Reference, Compte = l.CompteGeneral, Tiers = l.CompteTiers, Libelle = l.Libelle,
                     Echeance = l.Echeance, Debit = l.DebitAffiche, Credit = l.CreditAffiche
                 });
             _grille = new ObservableCollection<LigneGrille>(liste);
@@ -725,6 +731,7 @@ namespace SigmaCompta.App.ViewModels
         public string Piece { get { return _piece; } set { Set(ref _piece, value); } }
         public string Facture { get { return _facture; } set { Set(ref _facture, value); } }
 
+        public string Reference { get; set; }
         public string Compte { get; set; }
         public string Tiers { get; set; }
         public string Libelle { get; set; }

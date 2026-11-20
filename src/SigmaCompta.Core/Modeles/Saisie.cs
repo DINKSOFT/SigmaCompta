@@ -53,6 +53,8 @@ namespace SigmaCompta.Core.Modeles
     {
         public string Compte { get; set; }
         public string Tiers { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference).</summary>
+        public string Reference { get; set; }
         public string Libelle { get; set; }
         public string Echeance { get; set; }
         public string Debit { get; set; }
@@ -67,6 +69,8 @@ namespace SigmaCompta.Core.Modeles
         public string IntituleCompte { get; set; }
         public string CompteTiers { get; set; }
         public string IntituleTiers { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference).</summary>
+        public string Reference { get; set; }
         public string Libelle { get; set; }
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }
@@ -82,6 +86,7 @@ namespace SigmaCompta.Core.Modeles
             {
                 Compte = CompteGeneral,
                 Tiers = CompteTiers,
+                Reference = Reference,
                 Libelle = Libelle,
                 Echeance = Echeance.HasValue ? Echeance.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : "",
                 Debit = Debit == 0 ? "" : Debit.ToString("0.##", CultureInfo.CurrentCulture),

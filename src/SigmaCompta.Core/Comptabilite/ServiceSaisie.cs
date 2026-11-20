@@ -22,6 +22,7 @@ namespace SigmaCompta.Core.Comptabilite
     {
         public const int LongueurLibelle = 69;
         public const int LongueurRefPiece = 17;
+        public const int LongueurReference = 17;
         public const int LongueurPiece = 13;
         private const string FormatsDate = "dd/MM/yyyy|d/M/yyyy|dd/MM/yy|d/M/yy|ddMMyyyy|ddMMyy|yyyy-MM-dd";
 
@@ -204,6 +205,9 @@ namespace SigmaCompta.Core.Comptabilite
                 echeance = d.Date;
             }
 
+            var reference = (s.Reference ?? "").Trim();
+            if (reference.Length > LongueurReference) { erreur = "Référence trop longue : " + reference.Length + " caractères, " + LongueurReference + " au maximum."; return null; }
+
             var libelle = string.IsNullOrWhiteSpace(s.Libelle) ? (libelleParDefaut ?? "").Trim() : s.Libelle.Trim();
             if (libelle.Length > LongueurLibelle) { erreur = "Libellé trop long : " + libelle.Length + " caractères, " + LongueurLibelle + " au maximum."; return null; }
 
@@ -213,6 +217,7 @@ namespace SigmaCompta.Core.Comptabilite
                 IntituleCompte = compte.Intitule,
                 CompteTiers = tiers == null ? "" : tiers.Numero,
                 IntituleTiers = tiers == null ? "" : tiers.Intitule,
+                Reference = reference,
                 Libelle = libelle,
                 Debit = debit,
                 Credit = credit,
@@ -258,6 +263,7 @@ namespace SigmaCompta.Core.Comptabilite
                     Date = e.Date,
                     Piece = p.PieceFournie,
                     RefPiece = refPiece,
+                    Reference = (l.Reference ?? "").Trim(),
                     CompteGeneral = l.CompteGeneral,
                     CompteTiers = l.CompteTiers,
                     Libelle = string.IsNullOrWhiteSpace(l.Libelle) ? (e.Libelle ?? "").Trim() : l.Libelle.Trim(),
@@ -280,6 +286,8 @@ namespace SigmaCompta.Core.Comptabilite
                 p.Anomalies.Add(Erreur(0, "Le " + p.Date.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + " n'appartient pas à la période " + periode.Libelle + "."));
             if ((p.RefPiece ?? "").Length > LongueurRefPiece)
                 p.Anomalies.Add(Erreur(0, "Référence trop longue : " + p.RefPiece.Length + " caractères, " + LongueurRefPiece + " au maximum."));
+            foreach (var l in p.Lignes.Where(x => (x.Reference ?? "").Length > LongueurReference))
+                l.Anomalies.Add(Erreur(l.LigneFichier, "Référence trop longue : " + l.Reference.Length + " caractères, " + LongueurReference + " au maximum."));
             foreach (var l in p.Lignes.Where(x => (x.Libelle ?? "").Length > LongueurLibelle))
                 l.Anomalies.Add(Erreur(l.LigneFichier, "Libellé trop long : " + l.Libelle.Length + " caractères, " + LongueurLibelle + " au maximum."));
             p.ActualiserStatutLocal();
@@ -354,15 +362,17 @@ namespace SigmaCompta.Core.Comptabilite
         }
 
         /// <summary>Écritures du journal sur la période, ordonnées comme le journal.</summary>
-        public static Task<List<EcritureEtat>> LireBrouillardAsync(SqlConnection c, string journal, PeriodeSaisie periode,
-                                                                   CancellationToken ct = default(CancellationToken))
+        public static async Task<List<EcritureEtat>> LireBrouillardAsync(SqlConnection c, string journal, PeriodeSaisie periode,
+                                                                         CancellationToken ct = default(CancellationToken))
         {
-            return ServiceEtats.LireEcrituresAsync(c, ServiceEtats.RequeteJournal(true), cmd =>
+            // EC_Reference (colonne « Référence ») n'est lue que si la base l'a.
+            var avecReference = await SqlOutils.ScalaireAsync(c, "SELECT COL_LENGTH(N'dbo.F_ECRITUREC', N'EC_Reference')", ct).ConfigureAwait(false) != null;
+            return await ServiceEtats.LireEcrituresAsync(c, ServiceEtats.RequeteJournal(true, avecReference), cmd =>
             {
                 cmd.Parameters.Add(new SqlParameter("@du", SqlDbType.DateTime) { Value = periode.Mois });
                 cmd.Parameters.Add(new SqlParameter("@auExclu", SqlDbType.DateTime) { Value = periode.Mois.AddMonths(1) });
                 cmd.Parameters.Add(new SqlParameter("@journal", SqlDbType.VarChar, 13) { Value = (journal ?? "").Trim() });
-            }, ct);
+            }, ct).ConfigureAwait(false);
         }
 
         // ================================================================ Compte de trésorerie du journal
@@ -432,7 +442,7 @@ namespace SigmaCompta.Core.Comptabilite
             {
                 b.Lignes.Add(new LigneEtat
                 {
-                    Genre = GenreLigne.Detail, Date = e.Date, Journal = e.Journal, Piece = e.Piece, RefPiece = e.RefPiece,
+                    Genre = GenreLigne.Detail, Date = e.Date, Journal = e.Journal, Piece = e.Piece, RefPiece = e.RefPiece, Reference = e.Reference,
                     Compte = e.CompteGeneral, CompteTiers = e.CompteTiers, Libelle = e.Libelle,
                     Debit = e.Debit == 0 ? (decimal?)null : e.Debit, Credit = e.Credit == 0 ? (decimal?)null : e.Credit,
                     Echeance = e.Echeance, EcNo = e.EcNo

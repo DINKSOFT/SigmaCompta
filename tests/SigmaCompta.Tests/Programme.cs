@@ -164,7 +164,8 @@ namespace SigmaCompta.Tests
 
             Console.WriteLine("== TVP");
             var dt = ServiceImport.ConstruireLignes(bq06);
-            Verif(dt.Columns.Count == 8 && dt.Columns[0].ColumnName == "NumLigne" && dt.Columns[7].ColumnName == "EC_RefPiece", "colonnes TVP dans l'ordre du type");
+            Verif(dt.Columns.Count == 9 && dt.Columns[0].ColumnName == "NumLigne" && dt.Columns[7].ColumnName == "EC_RefPiece"
+                  && dt.Columns[8].ColumnName == "EC_Reference", "colonnes TVP dans l'ordre du type");
             Verif(dt.Rows[0]["CT_Num"] == DBNull.Value && (string)dt.Rows[1]["CT_Num"] == "C100003", "tiers NULL / renseigné");
 
             Console.WriteLine("== Profils JSON");
@@ -207,7 +208,11 @@ namespace SigmaCompta.Tests
             var lots02 = ExecuteurScript.DecouperLots(ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure));
             Verif(lots02.Count == 6 && lots02[5].StartsWith("CREATE PROCEDURE"), "script 02 : 6 lots, le dernier crée la procédure : " + lots02.Count);
             Verif(!lots02.Any(x => x.Contains("GRANT EXECUTE ON TYPE") && !x.Contains("CREATE PROCEDURE")), "commentaire final (GRANT) non exécuté seul");
-            Verif(ScriptsEmbarques.VersionProcedureEmbarquee == "1.3", "version embarquée 1.3");
+            Verif(ScriptsEmbarques.VersionProcedureEmbarquee == "1.4", "version embarquée 1.4");
+            var scriptProc = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
+            Verif(scriptProc.Contains("EC_Reference varchar(17)    NULL") && scriptProc.Contains("--#SI:F_ECRITUREC.EC_Reference")
+                  && !InstallateurProcedure.AdapterScript(scriptProc, new HashSet<string>()).Script.Contains("l.EC_Reference                                --"),
+                  "procédure 1.4 : référence de ligne (EC_Reference), retirée si la base n'a pas la colonne");
             var p02 = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
             Verif(p02.Contains("@RenumeroterDoublon bit         = 1") && p02.IndexOf("IF @Piece LIKE '%[0-9]' SET @Modele = @Piece;", StringComparison.Ordinal) > 0,
                   "procédure : renumérotation d'un n° déjà utilisé (par défaut)");
@@ -216,7 +221,7 @@ namespace SigmaCompta.Tests
 
             Console.WriteLine("== Adaptation de la procédure (clés cb* calculées)");
             var proc = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
-            var toutesCles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "F_ECRITUREC.cbJO_Num", "F_ECRITUREC.cbEC_Piece", "F_ECRITUREC.cbEC_RefPiece", "F_ECRITUREC.cbCG_Num", "F_ECRITUREC.cbCT_Num", "F_JMOUV.cbJO_Num", "F_ECRITUREC.cbHash" };
+            var toutesCles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "F_ECRITUREC.cbJO_Num", "F_ECRITUREC.cbEC_Piece", "F_ECRITUREC.cbEC_RefPiece", "F_ECRITUREC.cbCG_Num", "F_ECRITUREC.cbCT_Num", "F_JMOUV.cbJO_Num", "F_ECRITUREC.cbHash", "F_ECRITUREC.EC_Reference" };
             var ancienne = InstallateurProcedure.AdapterScript(proc, toutesCles);
             Verif(ancienne.ColonnesRetirees.Count == 0 && ancienne.Script.Contains("cbCT_Num") && ancienne.Script.Contains("e.cbHash IS NOT NULL"), "colonnes cb* à remplir : tout est conservé");
             var existantes = new HashSet<string>(toutesCles, StringComparer.OrdinalIgnoreCase);
@@ -505,6 +510,12 @@ namespace SigmaCompta.Tests
             var dtS = ServiceImport.ConstruireLignes(pS);
             Verif(dtS.Rows.Count == 3 && (string)dtS.Rows[0]["CT_Num"] == "F100003" && dtS.Rows[1]["CT_Num"] == DBNull.Value
                   && (decimal)dtS.Rows[1]["Debit"] == 100000, "lignes transmises à la procédure");
+            var avecRef = ServiceSaisie.InterpreterLigne(refS, new SaisieLigne { Compte = "6052", Reference = " 070139 ", Debit = "5" }, "", out err);
+            var pRef = ServiceSaisie.Construire(new EntetePiece { Journal = "ACH", Date = ServiceSaisie.Date(oct, "17") }, new List<LigneSaisie> { avecRef });
+            Verif(avecRef != null && avecRef.Reference == "070139" && avecRef.VersSaisie().Reference == "070139"
+                  && (string)ServiceImport.ConstruireLignes(pRef).Rows[0]["EC_Reference"] == "070139"
+                  && ServiceSaisie.InterpreterLigne(refS, new SaisieLigne { Compte = "6052", Reference = new string('9', 18), Debit = "5" }, "", out err) == null
+                  && err.StartsWith("Référence trop longue"), "référence de ligne saisie, transmise à la procédure, limitée à 17 caractères");
 
             var anKo = ServiceSaisie.Controler(ServiceSaisie.Construire(new EntetePiece { Journal = "ACH", Date = new DateTime(2025, 12, 5) },
                                                                         new List<LigneSaisie> { lignesS[1] }), refS, oct);

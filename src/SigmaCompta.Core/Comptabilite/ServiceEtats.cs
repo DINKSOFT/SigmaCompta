@@ -549,9 +549,10 @@ namespace SigmaCompta.Core.Comptabilite
                    " AND " + ConditionComptes(nature, plage) + " GROUP BY " + col;
         }
 
-        private static string ColonnesEcriture(bool colonneLettrage)
+        private static string ColonnesEcriture(bool colonneLettrage, bool colonneReference = false)
         {
-            return "SELECT e.EC_No, e.JO_Num, " + SqlOutils.DateEcriture + " AS EC_Date, e.EC_Piece, e.EC_RefPiece, e.CG_Num, e.CT_Num, e.EC_Intitule, " +
+            return "SELECT e.EC_No, e.JO_Num, " + SqlOutils.DateEcriture + " AS EC_Date, e.EC_Piece, e.EC_RefPiece, " +
+                   (colonneReference ? "e.EC_Reference, " : "") + "e.CG_Num, e.CT_Num, e.EC_Intitule, " +
                    "e.EC_Sens, e.EC_Montant, e.EC_Echeance, " +
                    (colonneLettrage ? "e.EC_Lettrage" : "CAST(NULL AS varchar(3)) AS EC_Lettrage") + " FROM dbo.F_ECRITUREC e ";
         }
@@ -566,10 +567,10 @@ namespace SigmaCompta.Core.Comptabilite
                    " ORDER BY " + col + ", " + SqlOutils.DateEcriture + ", e.JO_Num, e.EC_Piece, e.EC_No";
         }
 
-        /// <summary>Écritures des journaux. Paramètres : @du, @auExclu, [@journal].</summary>
-        public static string RequeteJournal(bool unJournal)
+        /// <summary>Écritures des journaux. Paramètres : @du, @auExclu, [@journal]. <paramref name="colonneReference"/> : lit aussi EC_Reference.</summary>
+        public static string RequeteJournal(bool unJournal, bool colonneReference = false)
         {
-            return ColonnesEcriture(false) +
+            return ColonnesEcriture(false, colonneReference) +
                    "WHERE " + SqlOutils.DateEcriture + " >= @du AND " + SqlOutils.DateEcriture + " < @auExclu" + (unJournal ? " AND e.JO_Num = @journal" : "") +
                    " ORDER BY e.JO_Num, " + SqlOutils.DateEcriture + ", e.EC_Piece, e.EC_No";
         }
@@ -685,6 +686,9 @@ namespace SigmaCompta.Core.Comptabilite
                 parametres(cmd);
                 using (var rd = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
                 {
+                    int iReference = -1;
+                    for (int k = 0; k < rd.FieldCount; k++)
+                        if (string.Equals(rd.GetName(k), "EC_Reference", StringComparison.OrdinalIgnoreCase)) iReference = k;
                     while (await rd.ReadAsync(ct).ConfigureAwait(false))
                     {
                         bool credit = SqlOutils.Entier(rd["EC_Sens"]) == 1;
@@ -696,6 +700,7 @@ namespace SigmaCompta.Core.Comptabilite
                             Date = SqlOutils.Date(rd["EC_Date"]) ?? DateTime.MinValue,
                             Piece = (SqlOutils.Texte(rd["EC_Piece"]) ?? "").Trim(),
                             RefPiece = (SqlOutils.Texte(rd["EC_RefPiece"]) ?? "").Trim(),
+                            Reference = iReference < 0 ? "" : (SqlOutils.Texte(rd.GetValue(iReference)) ?? "").Trim(),
                             CompteGeneral = (SqlOutils.Texte(rd["CG_Num"]) ?? "").Trim(),
                             CompteTiers = (SqlOutils.Texte(rd["CT_Num"]) ?? "").Trim(),
                             Libelle = (SqlOutils.Texte(rd["EC_Intitule"]) ?? "").Trim(),

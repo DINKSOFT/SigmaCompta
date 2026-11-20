@@ -8,11 +8,12 @@
         <!-- Largeurs communes à la ligne de saisie et à la grille, pour que les champs tombent sous leurs colonnes. -->
         <GridLength x:Key="LJour">52</GridLength>
         <GridLength x:Key="LPiece">92</GridLength>
-        <GridLength x:Key="LFacture">108</GridLength>
+        <GridLength x:Key="LFacture">104</GridLength>
+        <GridLength x:Key="LReference">132</GridLength>
         <GridLength x:Key="LCompte">116</GridLength>
         <GridLength x:Key="LTiers">108</GridLength>
-        <GridLength x:Key="LEcheance">116</GridLength>
-        <GridLength x:Key="LMontant">116</GridLength>
+        <GridLength x:Key="LEcheance">112</GridLength>
+        <GridLength x:Key="LMontant">112</GridLength>
 
         <!-- Champ de la ligne de saisie : indication grisée tant qu'il est vide, coins plus serrés -->
         <Style x:Key="ChampLigne" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
@@ -195,6 +196,7 @@
                         <ColumnDefinition Width="{StaticResource LJour}"/>
                         <ColumnDefinition Width="{StaticResource LPiece}"/>
                         <ColumnDefinition Width="{StaticResource LFacture}"/>
+                        <ColumnDefinition Width="{StaticResource LReference}"/>
                         <ColumnDefinition Width="{StaticResource LCompte}"/>
                         <ColumnDefinition Width="{StaticResource LTiers}"/>
                         <ColumnDefinition Width="*" MinWidth="140"/>
@@ -208,21 +210,23 @@
                              MaxLength="13" ToolTip="Vide : numéro attribué automatiquement selon le journal"/>
                     <TextBox Grid.Column="2" Style="{StaticResource ChampLigne}" Text="{Binding RefPieceTexte, UpdateSourceTrigger=PropertyChanged}" Tag="N° facture"
                              MaxLength="17" ToolTip="N° de facture, repris sur chaque ligne de la pièce"/>
-                    <TextBox x:Name="ChampCompte" Grid.Column="3" Style="{StaticResource ChampLigne}" Text="{Binding CompteTexte, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="ChampReference" Grid.Column="3" Style="{StaticResource ChampLigne}" Text="{Binding ReferenceTexte, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Référence" MaxLength="17" ToolTip="Référence de la ligne (reprise sur la ligne suivante)"/>
+                    <TextBox x:Name="ChampCompte" Grid.Column="4" Style="{StaticResource ChampLigne}" Text="{Binding CompteTexte, UpdateSourceTrigger=PropertyChanged}"
                              Tag="N° compte gén." FontFamily="{StaticResource PoliceMono}" TextChanged="ChampCompte_TextChanged"
                              LostKeyboardFocus="ChampListe_LostKeyboardFocus"
                              ToolTip="N° (401 → 4010000), début de n° ou partie de l'intitulé. Flèche bas : liste des comptes"/>
-                    <TextBox x:Name="ChampTiers" Grid.Column="4" Style="{StaticResource ChampLigne}" Text="{Binding TiersTexte, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="ChampTiers" Grid.Column="5" Style="{StaticResource ChampLigne}" Text="{Binding TiersTexte, UpdateSourceTrigger=PropertyChanged}"
                              Tag="N° compte tiers" FontFamily="{StaticResource PoliceMono}" TextChanged="ChampCompte_TextChanged"
                              LostKeyboardFocus="ChampListe_LostKeyboardFocus"
                              ToolTip="Tiers : son compte collectif est pris si le compte général est vide. Flèche bas : liste des tiers"/>
-                    <TextBox x:Name="ChampLibelle" Grid.Column="5" Style="{StaticResource ChampLigne}" Text="{Binding LibelleLigne, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="ChampLibelle" Grid.Column="6" Style="{StaticResource ChampLigne}" Text="{Binding LibelleLigne, UpdateSourceTrigger=PropertyChanged}"
                              Tag="Libellé écriture" MaxLength="69"/>
-                    <c:ChampDate x:Name="ChampEcheance" Grid.Column="6" Margin="0,0,4,0" Texte="{Binding EcheanceTexte}" Indication="Date échéance"
+                    <c:ChampDate x:Name="ChampEcheance" Grid.Column="7" Margin="0,0,4,0" Texte="{Binding EcheanceTexte}" Indication="Date échéance"
                                  MoisParDefaut="{Binding DatePiece}"/>
-                    <TextBox x:Name="ChampDebit" Grid.Column="7" Style="{StaticResource ChampMontant}" Text="{Binding DebitTexte, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="ChampDebit" Grid.Column="8" Style="{StaticResource ChampMontant}" Text="{Binding DebitTexte, UpdateSourceTrigger=PropertyChanged}"
                              Tag="Débit"/>
-                    <TextBox x:Name="ChampCredit" Grid.Column="8" Style="{StaticResource ChampMontant}" Margin="0" Text="{Binding CreditTexte, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="ChampCredit" Grid.Column="9" Style="{StaticResource ChampMontant}" Margin="0" Text="{Binding CreditTexte, UpdateSourceTrigger=PropertyChanged}"
                              Tag="Crédit"/>
                 </Grid>
 
@@ -266,13 +270,14 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Jour" Binding="{Binding Jour}" Width="52" ElementStyle="{StaticResource CelluleDroite}"/>
                             <DataGridTextColumn Header="N° pièce" Binding="{Binding Piece}" Width="92"/>
-                            <DataGridTextColumn Header="N° facture" Binding="{Binding Facture}" Width="108" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="N° facture" Binding="{Binding Facture}" Width="104" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="Référence" Binding="{Binding Reference}" Width="132" ElementStyle="{StaticResource CelluleTexte}"/>
                             <DataGridTextColumn Header="N° compte général" Binding="{Binding Compte}" Width="116"/>
                             <DataGridTextColumn Header="N° compte tiers" Binding="{Binding Tiers}" Width="108"/>
                             <DataGridTextColumn Header="Libellé écriture" Binding="{Binding Libelle}" Width="*" MinWidth="140" ElementStyle="{StaticResource CelluleTexte}"/>
-                            <DataGridTextColumn Header="Date échéance" Binding="{Binding Echeance, StringFormat={}{0:dd/MM/yyyy}}" Width="116"/>
-                            <DataGridTextColumn Header="Débit" Binding="{Binding Debit, StringFormat={}{0:#,##0.##}}" Width="116" ElementStyle="{StaticResource CelluleDroite}"/>
-                            <DataGridTextColumn Header="Crédit" Binding="{Binding Credit, StringFormat={}{0:#,##0.##}}" Width="116" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="Date échéance" Binding="{Binding Echeance, StringFormat={}{0:dd/MM/yyyy}}" Width="112"/>
+                            <DataGridTextColumn Header="Débit" Binding="{Binding Debit, StringFormat={}{0:#,##0.##}}" Width="112" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="Crédit" Binding="{Binding Credit, StringFormat={}{0:#,##0.##}}" Width="112" ElementStyle="{StaticResource CelluleDroite}"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     <TextBlock Style="{StaticResource Discret}" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="20,40,20,20"
