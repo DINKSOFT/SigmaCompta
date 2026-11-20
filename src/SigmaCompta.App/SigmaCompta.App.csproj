@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>SigmaCompta.App</RootNamespace>
+    <AssemblyName>SigmaCompta</AssemblyName>
+    <ApplicationIcon>Assets\sigma.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>2.0.0</Version>
+    <Company>Dinasie</Company>
+    <Product>Sigma Compta</Product>
+    <Description>Comptabilité générale sur une base comptable SQL Server.</Description>
+    <Copyright>© 2026 Dinasie</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- Comme sous .NET Framework : formats et comparaisons de texte Windows (NLS) plutôt qu'ICU.
+       Évite les écarts de .NET 5+ (séparateur de milliers U+202F, IndexOf sur « \r\n »…). -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SigmaCompta.Core\SigmaCompta.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\sigma.ico" />
+  </ItemGroup>
+
+</Project>

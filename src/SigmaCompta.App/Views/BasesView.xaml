@@ -1,0 +1,224 @@
+<UserControl x:Class="SigmaCompta.App.Views.BasesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="380"/>
+            <ColumnDefinition Width="22"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ============ Liste des bases -->
+        <Border Style="{StaticResource Carte}" Padding="18,18,10,10">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="2,0,8,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Bases du serveur" Style="{StaticResource TitreCarte}"/>
+                        <Border Style="{StaticResource Pastille}" Margin="10,0,0,0" Background="{StaticResource PrimaireDoux}">
+                            <TextBlock Style="{StaticResource TextePastille}" Foreground="{StaticResource PrimaireFonce}">
+                                <Run Text="{Binding NombreBasesComptables, Mode=OneWay}"/><Run Text=" comptables / "/><Run Text="{Binding NombreBases, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                    <Button Grid.Column="1" Style="{StaticResource BoutonIcone}" Content="&#xE72C;" ToolTip="Actualiser la liste"
+                            Command="{Binding ActualiserCommand}"/>
+                </Grid>
+                <TextBox DockPanel.Dock="Top" Margin="0,0,8,10" Tag="Rechercher une base ou une société…"
+                         Text="{Binding Recherche, UpdateSourceTrigger=PropertyChanged}"/>
+                <CheckBox DockPanel.Dock="Top" Style="{StaticResource Interrupteur}" Margin="2,2,8,14"
+                          IsChecked="{Binding SeulementComptables}" Content="Bases comptables uniquement"/>
+
+                <Grid>
+                    <ListBox ItemsSource="{Binding BasesAffichees}" SelectedItem="{Binding BaseSelectionnee}"
+                             ItemContainerStyle="{StaticResource ElementCarte}" Padding="0,0,6,0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="38" Height="38" CornerRadius="10" VerticalAlignment="Top">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#E9EDF4"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding EstComptabilite}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource DegradeMarque}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding Nom, Converter={StaticResource Initiale}}" FontSize="{StaticResource TailleTitreCarte}" FontWeight="Bold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding EstComptabilite}" Value="True">
+                                                            <Setter Property="Foreground" Value="White"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <TextBlock Text="{Binding Nom}" FontWeight="SemiBold" FontSize="{StaticResource TailleTexte}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding RaisonSociale}" Style="{StaticResource Discret}" TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap" Visibility="{Binding RaisonSociale, Converter={StaticResource ValeurVisibilite}}"/>
+                                        <WrapPanel Margin="0,7,0,0">
+                                            <Border Style="{StaticResource Pastille}" Margin="0,0,6,0">
+                                                <TextBlock Text="{Binding TypeLibelle}" Style="{StaticResource TextePastille}" Foreground="{StaticResource TexteSecondaire}"/>
+                                            </Border>
+                                            <Border Style="{StaticResource Pastille}" Background="{StaticResource SuccesDoux}" Margin="0,0,6,0"
+                                                    Visibility="{Binding ProcedureInstallee, Converter={StaticResource BoolVisibilite}}">
+                                                <TextBlock Style="{StaticResource TextePastille}" Foreground="{StaticResource Succes}">
+                                                    <Run Text="Procédure v"/><Run Text="{Binding VersionProcedure, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </Border>
+                                        </WrapPanel>
+                                        <TextBlock Text="{Binding Erreur}" Foreground="{StaticResource Erreur}" FontSize="{StaticResource TaillePetite}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                                   Visibility="{Binding Erreur, Converter={StaticResource ValeurVisibilite}}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20"
+                                Visibility="{Binding BasesAffichees.Count, Converter={StaticResource ValeurVisibilite}, ConverterParameter=inverse}">
+                        <TextBlock Text="&#xE8F1;" Style="{StaticResource Icone}" FontSize="24" Foreground="{StaticResource BordureForte}"/>
+                        <TextBlock Text="Aucune base à afficher" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,10,0,4"/>
+                        <TextBlock Text="Désactive le filtre « Bases comptables uniquement » ou actualise la liste." Style="{StaticResource Discret}"
+                                   TextAlignment="Center" MaxWidth="240"/>
+                    </StackPanel>
+                </Grid>
+            </DockPanel>
+        </Border>
+
+        <!-- ============ Détail de la base -->
+        <Grid Grid.Column="2">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding ABaseSelectionnee, Converter={StaticResource BoolVisibilite}, ConverterParameter=inverse}">
+                <TextBlock Text="&#xE8F1;" Style="{StaticResource Icone}" FontSize="36" Foreground="{StaticResource BordureForte}"/>
+                <TextBlock Text="Sélectionne une base dans la liste" Style="{StaticResource TitreCarte}" Margin="0,14,0,0" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <DockPanel Visibility="{Binding ABaseSelectionnee, Converter={StaticResource BoolVisibilite}}">
+                <!-- En-tête de la base -->
+                <Border DockPanel.Dock="Top" Style="{StaticResource Carte}" Margin="0,0,0,18">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="54" Height="54" CornerRadius="14" Background="{StaticResource DegradeMarque}" VerticalAlignment="Top">
+                            <TextBlock Text="{Binding BaseSelectionnee.Nom, Converter={StaticResource Initiale}}" FontSize="{StaticResource TailleGrand}" FontWeight="Bold"
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="{Binding BaseSelectionnee.Nom}" FontFamily="{StaticResource PoliceTitre}" FontSize="{StaticResource TailleKpi}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding BaseSelectionnee.RaisonSociale}" Foreground="{StaticResource TexteSecondaire}" FontSize="{StaticResource TailleTexte}" Margin="0,2,0,0"/>
+                            <UniformGrid Columns="4" Margin="0,18,0,0">
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="ÉCRITURES" Style="{StaticResource KpiLibelle}"/>
+                                    <TextBlock Text="{Binding BaseSelectionnee.NombreEcritures, StringFormat={}{0:N0}}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="DERNIÈRE ÉCRITURE" Style="{StaticResource KpiLibelle}"/>
+                                    <TextBlock Text="{Binding BaseSelectionnee.DerniereEcriture, StringFormat={}{0:dd/MM/yyyy}, TargetNullValue=—}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,12,0">
+                                    <TextBlock Text="EXERCICE" Style="{StaticResource KpiLibelle}"/>
+                                    <TextBlock Style="{StaticResource Kpi}" FontSize="{StaticResource TailleAccent}" Margin="0,7,0,0">
+                                        <Run Text="{Binding BaseSelectionnee.DebutExercice, StringFormat={}{0:dd/MM/yy}, Mode=OneWay, TargetNullValue=—}"/>
+                                        <Run Text="→"/>
+                                        <Run Text="{Binding BaseSelectionnee.FinExercice, StringFormat={}{0:dd/MM/yy}, Mode=OneWay, TargetNullValue=—}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="COMPATIBILITÉ SQL" Style="{StaticResource KpiLibelle}"/>
+                                    <TextBlock Text="{Binding BaseSelectionnee.NiveauCompatibilite}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Pied : action -->
+                <Border DockPanel.Dock="Bottom" Margin="0,18,0,0">
+                    <Grid>
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Discret}" FontSize="{StaticResource TailleTexte}"
+                                   Text="La base est utilisée pour la suite : vérification, référentiel (journaux, comptes, tiers) et import."/>
+                        <Button HorizontalAlignment="Right" Style="{StaticResource BoutonPrimaire}" Command="{Binding UtiliserCommand}" Padding="20,9">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Utiliser cette base"/>
+                                <TextBlock Text="&#xE72A;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}" Margin="10,0,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Table cible -->
+                <Border Style="{StaticResource Carte}">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Table cible" Style="{StaticResource TitreCarte}"/>
+                                <TextBlock Text="Les tables dont la structure correspond aux écritures comptables sont détectées automatiquement." Style="{StaticResource Discret}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <CheckBox Grid.Column="1" Style="{StaticResource Interrupteur}" IsChecked="{Binding ToutesLesTables}"
+                                      Content="Toutes les tables" VerticalAlignment="Center"/>
+                        </Grid>
+                        <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding TablesAffichees}" SelectedItem="{Binding TableCible}" MaxWidth="560" HorizontalAlignment="Left" MinWidth="420">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8FD;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}" Foreground="{StaticResource TexteDiscret}" Margin="0,0,9,0"/>
+                                        <TextBlock Text="{Binding NomComplet}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NombreLignes, StringFormat='  ·  {0:N0} lignes'}" Foreground="{StaticResource TexteDiscret}"/>
+                                        <TextBlock Foreground="{StaticResource TexteDiscret}">
+                                            <Run Text="  ·  "/><Run Text="{Binding ColonnesRequisesPresentes, Mode=OneWay}"/><Run Text="/"/><Run Text="{Binding ColonnesRequisesTotal, Mode=OneWay}"/><Run Text=" colonnes"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Border DockPanel.Dock="Top" Margin="0,12,0,0" Background="{StaticResource AvertDoux}" CornerRadius="10" Padding="12,9"
+                                Visibility="{Binding AvertissementTable, Converter={StaticResource ValeurVisibilite}}">
+                            <TextBlock Text="{Binding AvertissementTable}" TextWrapping="Wrap" Foreground="{StaticResource Avert}"/>
+                        </Border>
+                        <TextBlock DockPanel.Dock="Top" Text="Structure attendue par la procédure d'import" Style="{StaticResource Etiquette}" Margin="0,18,0,8"/>
+                        <Border BorderBrush="{StaticResource Bordure}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+                            <DataGrid ItemsSource="{Binding Structure}" AutoGenerateColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="44">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}"
+                                                           Text="{Binding Conforme, Converter={StaticResource Statut}, ConverterParameter=icone}"
+                                                           Foreground="{Binding Conforme, Converter={StaticResource Statut}, ConverterParameter=texte}">
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="COLONNE" Binding="{Binding Nom}" Width="170" FontWeight="SemiBold"/>
+                                    <DataGridTextColumn Header="TYPE" Binding="{Binding Type}" Width="140"/>
+                                    <DataGridTextColumn Header="RÔLE" Binding="{Binding Role}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </DockPanel>
+                </Border>
+            </DockPanel>
+        </Grid>
+    </Grid>
+</UserControl>

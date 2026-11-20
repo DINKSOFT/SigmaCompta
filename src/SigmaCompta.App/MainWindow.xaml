@@ -1,0 +1,355 @@
+<Window x:Class="SigmaCompta.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SigmaCompta.App.ViewModels"
+        xmlns:v="clr-namespace:SigmaCompta.App.Views"
+        Title="Sigma Compta — Comptabilité"
+        MinWidth="980" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Fond}" Foreground="{StaticResource Texte}"
+        FontFamily="{StaticResource PoliceTexte}" FontSize="{StaticResource TailleTexte}"
+        Icon="/Assets/sigma.ico"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" SnapsToDevicePixels="True">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="46" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Association ViewModel → écran -->
+        <DataTemplate DataType="{x:Type vm:ConnexionViewModel}"><v:ConnexionView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BasesViewModel}"><v:BasesView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:VerificationViewModel}"><v:VerificationView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DonneesViewModel}"><v:DonneesView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ControleViewModel}"><v:ControleView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ImportViewModel}"><v:ImportView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:HistoriqueViewModel}"><v:HistoriqueView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ConsultationViewModel}"><v:ConsultationView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:EtatsViewModel}"><v:EtatsView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SaisieViewModel}"><v:SaisieView/></DataTemplate>
+
+        <!-- Entrée de la barre latérale (DataContext = EtapeViewModel) -->
+        <Style x:Key="BoutonEtape" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="fond" CornerRadius="10" Padding="10,6" Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="pastille" Width="28" Height="28" CornerRadius="9" Background="#18FFFFFF"
+                                        BorderBrush="{StaticResource LateralBordure}" BorderThickness="1">
+                                    <Grid>
+                                        <TextBlock x:Name="icone" Text="{Binding Icone}" Style="{StaticResource Icone}" FontSize="{StaticResource TailleAccent}"
+                                                   Foreground="{StaticResource LateralTexte}" HorizontalAlignment="Center"/>
+                                        <TextBlock x:Name="coche" Text="&#xE73E;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}"
+                                                   Foreground="White" HorizontalAlignment="Center" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="titre" Text="{Binding Titre}" FontSize="{StaticResource TailleTexte}" FontWeight="SemiBold"
+                                               Foreground="{StaticResource LateralTexte}"/>
+                                    <TextBlock x:Name="desc" Text="{Binding Description}" FontSize="{StaticResource TaillePetite}"
+                                               Foreground="{StaticResource LateralTexteDiscret}" Margin="0,1,0,0"/>
+                                </StackPanel>
+                                <Border x:Name="indicateur" Grid.Column="1" Width="3" Height="20" CornerRadius="1.5" HorizontalAlignment="Right"
+                                        Background="{StaticResource Accent}" Visibility="Collapsed" Margin="0,0,-12,0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="fond" Property="Background" Value="{StaticResource LateralSurvol}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding EstTerminee}" Value="True">
+                                <Setter TargetName="pastille" Property="Background" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="pastille" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="icone" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="coche" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding EstActive}" Value="True">
+                                <Setter TargetName="fond" Property="Background" Value="{StaticResource LateralActif}"/>
+                                <Setter TargetName="titre" Property="Foreground" Value="White"/>
+                                <Setter TargetName="desc" Property="Foreground" Value="{StaticResource LateralTexte}"/>
+                                <Setter TargetName="pastille" Property="Background" Value="{StaticResource DegradeMarque}"/>
+                                <Setter TargetName="pastille" Property="BorderBrush" Value="Transparent"/>
+                                <Setter TargetName="icone" Property="Foreground" Value="White"/>
+                                <Setter TargetName="icone" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="coche" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="indicateur" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding EstAccessible}" Value="False">
+                                <Setter TargetName="fond" Property="Opacity" Value="0.42"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Entrée de navigation (étape ou module), réutilisée par les trois rubriques de la barre latérale -->
+        <DataTemplate x:Key="ModeleEtape">
+            <Button Style="{StaticResource BoutonEtape}"
+                    Command="{Binding DataContext.NaviguerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"/>
+        </DataTemplate>
+
+        <Style x:Key="TitreRubrique" TargetType="TextBlock">
+            <Setter Property="Margin" Value="22,10,0,6"/>
+            <Setter Property="FontSize" Value="{StaticResource TailleMini}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource LateralTexteDiscret}"/>
+        </Style>
+
+        <Style x:Key="BoutonFenetre" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}"/>
+            <Setter Property="FontFamily" Value="{StaticResource PoliceIcones}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#14000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BoutonFermer" TargetType="Button" BasedOn="{StaticResource BoutonFenetre}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="Transparent">
+                            <ContentPresenter x:Name="c" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#E81123"/>
+                                <Setter TargetName="c" Property="TextElement.Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Taille de départ et zone d'agrandissement : voir MainWindow.xaml.cs (adaptées à l'écran). -->
+    <Border>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="236"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ======================================== Barre latérale -->
+            <Border Background="{StaticResource FondLateral}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="18,16,16,16">
+                        <Border Width="34" Height="34" CornerRadius="12" Background="{StaticResource DegradeMarque}">
+                            <TextBlock Text="Σ" FontFamily="Cambria Math, Segoe UI" FontSize="{StaticResource TailleGrand}" FontWeight="Bold" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0"/>
+                        </Border>
+                        <StackPanel Margin="13,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Sigma Compta" FontFamily="{StaticResource PoliceTitre}" FontSize="{StaticResource TailleKpi}" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="Comptabilité générale" FontSize="{StaticResource TaillePetite}" Foreground="{StaticResource LateralTexte}" Margin="0,1,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Carte de connexion -->
+                    <Border DockPanel.Dock="Bottom" Margin="16,8,16,18" Padding="14,12" CornerRadius="12"
+                            Background="#12FFFFFF" BorderBrush="{StaticResource LateralBordure}" BorderThickness="1">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#6E7D99"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Session.EstConnecte}" Value="True">
+                                                    <Setter Property="Fill" Value="#22C55E"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Margin="8,0,0,0" FontSize="{StaticResource TaillePetite}" FontWeight="SemiBold" Foreground="{StaticResource LateralTexteDiscret}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="HORS CONNEXION"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Session.EstConnecte}" Value="True">
+                                                    <Setter Property="Text" Value="CONNECTÉ"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Session.LibelleConnexion}" Foreground="White" FontSize="{StaticResource TailleTexte}" FontWeight="SemiBold"
+                                       Margin="0,6,0,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Session.LibelleConnexion}"/>
+                            <TextBlock Text="{Binding Session.Base.RaisonSociale}" Foreground="{StaticResource LateralTexte}" FontSize="{StaticResource TaillePetite}"
+                                       Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding Session.Base.RaisonSociale, Converter={StaticResource ValeurVisibilite}}"/>
+                            <TextBlock Foreground="{StaticResource LateralTexteDiscret}" FontSize="{StaticResource TailleMini}" Margin="0,8,0,0">
+                                <Run Text="Sigma Compta"/>
+                                <Run Text="{Binding Version, Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <Button DockPanel.Dock="Bottom" Margin="12,0" Style="{StaticResource BoutonEtape}"
+                            DataContext="{Binding EtapeHistorique}"
+                            Command="{Binding DataContext.NaviguerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"/>
+                    <Border DockPanel.Dock="Bottom" Height="1" Background="{StaticResource LateralBordure}" Margin="24,10,24,10"/>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                        <StackPanel>
+                            <TextBlock Text="DOSSIER" Style="{StaticResource TitreRubrique}" Margin="26,0,0,8"/>
+                            <ItemsControl ItemsSource="{Binding EtapesDossier}" ItemTemplate="{StaticResource ModeleEtape}" Margin="12,0"/>
+
+                            <TextBlock Text="COMPTABILITÉ" Style="{StaticResource TitreRubrique}"/>
+                            <ItemsControl ItemsSource="{Binding Modules}" ItemTemplate="{StaticResource ModeleEtape}" Margin="12,0"/>
+
+                            <TextBlock Text="IMPORT D'ÉCRITURES" Style="{StaticResource TitreRubrique}"/>
+                            <ItemsControl ItemsSource="{Binding EtapesImport}" ItemTemplate="{StaticResource ModeleEtape}" Margin="12,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- ======================================== Contenu -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="46"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Barre de titre (zone de déplacement) -->
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="24,6,0,0">
+                        <TextBlock FontSize="{StaticResource TailleTexte}" Foreground="{StaticResource TexteDiscret}">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0}  ·  {1}">
+                                    <Binding Path="EtapeCourante.Rubrique"/>
+                                    <Binding Path="EtapeCourante.Titre"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <Button Style="{StaticResource BoutonFenetre}" Content="&#xE921;" Click="Reduire" ToolTip="Réduire"/>
+                        <Button Style="{StaticResource BoutonFenetre}" Click="Agrandir" ToolTip="Agrandir / restaurer">
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="&#xE922;"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                                                <Setter Property="Text" Value="&#xE923;"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <Button Style="{StaticResource BoutonFermer}" Content="&#xE8BB;" Click="Fermer" ToolTip="Fermer"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- En-tête de page -->
+                <StackPanel Grid.Row="1" Margin="24,0,24,12">
+                    <TextBlock Text="{Binding PageCourante.Titre}" Style="{StaticResource TitrePage}"/>
+                    <TextBlock Text="{Binding PageCourante.SousTitre}" Style="{StaticResource SousTitrePage}" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Écran courant -->
+                <ContentControl Grid.Row="2" Margin="24,0,24,16" Content="{Binding PageCourante}" Focusable="False"/>
+
+                <!-- Voile d'attente -->
+                <Grid Grid.Row="1" Grid.RowSpan="2" Background="#B8F3F5FA"
+                      Visibility="{Binding PageCourante.EstOccupe, Converter={StaticResource BoolVisibilite}}">
+                    <Border Style="{StaticResource Carte}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28,22" MinWidth="320">
+                        <StackPanel Orientation="Horizontal">
+                            <Control Style="{StaticResource Roue}"/>
+                            <StackPanel Margin="18,0,0,0" VerticalAlignment="Center" MaxWidth="420">
+                                <TextBlock Text="Traitement en cours" Style="{StaticResource TitreCarte}"/>
+                                <TextBlock Text="{Binding PageCourante.MessageOccupe}" Foreground="{StaticResource TexteSecondaire}"
+                                           Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Notification éphémère -->
+                <Border Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,24" MaxWidth="520" MinWidth="320"
+                        Background="{StaticResource Surface}" CornerRadius="12" BorderThickness="1"
+                        BorderBrush="{Binding TypeNotification, Converter={StaticResource Statut}, ConverterParameter=fond}"
+                        Effect="{StaticResource OmbreFlottante}" RenderTransformOrigin="0.5,1">
+                    <Border.RenderTransform>
+                        <TranslateTransform/>
+                    </Border.RenderTransform>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NotificationVisible}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.22"/>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 From="18" To="0" Duration="0:0:0.25">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut"/>
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Grid Margin="14,12,8,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="30" Height="30" CornerRadius="15" VerticalAlignment="Top"
+                                Background="{Binding TypeNotification, Converter={StaticResource Statut}, ConverterParameter=fond}">
+                            <TextBlock Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}" HorizontalAlignment="Center"
+                                       Text="{Binding TypeNotification, Converter={StaticResource Statut}, ConverterParameter=icone}"
+                                       Foreground="{Binding TypeNotification, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Notification}" TextWrapping="Wrap" VerticalAlignment="Center"
+                                   Margin="12,0,8,0" LineHeight="19"/>
+                        <Button Grid.Column="2" Style="{StaticResource BoutonIcone}" Width="28" Height="28" FontSize="{StaticResource TailleMini}"
+                                Content="&#xE711;" VerticalAlignment="Top" Command="{Binding FermerNotificationCommand}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

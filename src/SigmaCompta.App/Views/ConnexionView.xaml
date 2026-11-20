@@ -1,0 +1,218 @@
+<UserControl x:Class="SigmaCompta.App.Views.ConnexionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:SigmaCompta.App.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" MaxWidth="660"/>
+                <ColumnDefinition Width="22"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ Formulaire de connexion -->
+            <Border Style="{StaticResource Carte}" VerticalAlignment="Top" Padding="28,26">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,22">
+                        <Border Width="44" Height="44" CornerRadius="12" Background="{StaticResource PrimaireDoux}">
+                            <TextBlock Text="&#xE968;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleKpi}" Foreground="{StaticResource Primaire}" HorizontalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Serveur SQL Server" Style="{StaticResource TitreCarte}"/>
+                            <TextBlock Text="Instance hébergeant les bases comptables" Style="{StaticResource Discret}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="Instance" Style="{StaticResource Etiquette}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ComboBox IsEditable="True" ItemsSource="{Binding Serveurs}"
+                                  Text="{Binding Serveur, UpdateSourceTrigger=PropertyChanged}" FontSize="{StaticResource TailleTexte}"/>
+                        <Button Grid.Column="1" Margin="10,0,0,0" Command="{Binding DetecterCommand}" ToolTip="Rechercher les instances SQL Server locales et du réseau (SQL Browser)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE721;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                <TextBlock>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Détecter"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DetectionEnCours}" Value="True">
+                                                    <Setter Property="Text" Value="Recherche…"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <TextBlock Style="{StaticResource Discret}" Margin="2,7,0,0"
+                               Text="Exemples : SERVEUR\COMPTA · 192.168.1.10\SQLEXPRESS · (local)"/>
+
+                    <TextBlock Text="Authentification" Style="{StaticResource Etiquette}" Margin="0,22,0,8"/>
+                    <Border Style="{StaticResource Segments}">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" GroupName="auth" IsChecked="{Binding AuthentificationWindows}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE77B;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Windows"/>
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="auth" IsChecked="{Binding AuthentificationSql}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE72E;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="SQL Server"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </Border>
+
+                    <Grid Margin="0,16,0,0" Visibility="{Binding AuthentificationSql, Converter={StaticResource BoolVisibilite}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="14"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Login" Style="{StaticResource Etiquette}"/>
+                            <TextBox Text="{Binding Login, UpdateSourceTrigger=PropertyChanged}" Tag="ex. sa"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Mot de passe" Style="{StaticResource Etiquette}"/>
+                            <PasswordBox c:Aides.MotDePasse="{Binding MotDePasse, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <CheckBox Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" IsChecked="{Binding Memoriser}"
+                                  Content="Mémoriser le mot de passe (chiffré pour ce compte Windows uniquement)"/>
+                    </Grid>
+
+                    <!-- Erreur de connexion -->
+                    <Border Margin="0,18,0,0" Background="{StaticResource ErreurDoux}" CornerRadius="10" Padding="14,11"
+                            Visibility="{Binding Erreur, Converter={StaticResource ValeurVisibilite}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE783;" Style="{StaticResource Icone}" Foreground="{StaticResource Erreur}" VerticalAlignment="Top" Margin="0,2,10,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Erreur}" TextWrapping="Wrap" Foreground="{StaticResource Erreur}" LineHeight="19"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Separateur}" Margin="0,24,0,20"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource BoutonPrimaire}" Command="{Binding ConnecterCommand}" IsDefault="True" Padding="20,9">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE703;" Style="{StaticResource Icone}" Margin="0,0,9,0"/>
+                                <TextBlock Text="Se connecter"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Margin="10,0,0,0" Command="{Binding ContinuerCommand}"
+                                Visibility="{Binding EstConnecte, Converter={StaticResource BoolVisibilite}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Choisir la base"/>
+                                <TextBlock Text="&#xE72A;" Style="{StaticResource Icone}" Margin="9,0,0,0" FontSize="{StaticResource TailleTexte}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Margin="10,0,0,0" Style="{StaticResource BoutonFantome}" Command="{Binding DeconnecterCommand}"
+                                Content="Se déconnecter" Visibility="{Binding EstConnecte, Converter={StaticResource BoolVisibilite}}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ Colonne de droite -->
+            <StackPanel Grid.Column="2">
+                <!-- Serveur connecté -->
+                <Border Style="{StaticResource Carte}" Margin="0,0,0,18" Visibility="{Binding EstConnecte, Converter={StaticResource BoolVisibilite}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource SuccesDoux}">
+                                <TextBlock Text="&#xE73E;" Style="{StaticResource Icone}" Foreground="{StaticResource Succes}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Info.Nom}" Style="{StaticResource TitreCarte}"/>
+                                <TextBlock Text="{Binding Info.VersionCommerciale}" Style="{StaticResource Discret}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <Grid Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Version" Style="{StaticResource Discret}" Margin="0,0,18,8"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Info.Version}" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="1" Text="Édition" Style="{StaticResource Discret}" Margin="0,0,18,8"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Info.Edition}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="2" Text="Login" Style="{StaticResource Discret}" Margin="0,0,18,8"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="{Binding Info.LoginConnecte}"/>
+                                <Border Style="{StaticResource Pastille}" Background="{StaticResource PrimaireDoux}" Margin="8,0,0,0"
+                                        Visibility="{Binding Info.EstSysAdmin, Converter={StaticResource BoolVisibilite}}">
+                                    <TextBlock Text="sysadmin" Style="{StaticResource TextePastille}" Foreground="{StaticResource PrimaireFonce}"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Grid.Row="3" Text="Bases" Style="{StaticResource Discret}" Margin="0,0,18,0"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Info.NombreBases, StringFormat={}{0} base(s) utilisateur}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Serveurs récents -->
+                <Border Style="{StaticResource Carte}" Margin="0,0,0,18" Visibility="{Binding Recents.Count, Converter={StaticResource ValeurVisibilite}}">
+                    <StackPanel>
+                        <TextBlock Text="Serveurs récents" Style="{StaticResource TitreCarte}" Margin="0,0,0,12"/>
+                        <ItemsControl ItemsSource="{Binding Recents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource Puce}" CommandParameter="{Binding}"
+                                            Command="{Binding DataContext.ChoisirServeurCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE823;" Style="{StaticResource Icone}" FontSize="{StaticResource TaillePetite}" Margin="0,0,7,0"
+                                                       Foreground="{StaticResource TexteDiscret}"/>
+                                            <TextBlock Text="{Binding}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Conseils -->
+                <Border Style="{StaticResource Encart}" Background="{StaticResource InfoDoux}" BorderBrush="#D3E1FB">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE82F;" Style="{StaticResource Icone}" Foreground="{StaticResource Info}" VerticalAlignment="Top" Margin="0,2,12,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Bon à savoir" FontWeight="SemiBold" Foreground="{StaticResource Texte}" Margin="0,0,0,6"/>
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TexteSecondaire}" LineHeight="19"
+                                       Text="Utilise le même nom de serveur que celui configuré sur les postes du logiciel comptable. En cas d'erreur 53 ou de délai dépassé : vérifie que les services SQL Server et SQL Server Browser sont démarrés et que le pare-feu autorise le port 1433 (ou le port dynamique de l'instance)."/>
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TexteSecondaire}" LineHeight="19" Margin="0,8,0,0"
+                                       Text="Le login doit pouvoir lire les bases comptables ; l'installation de la procédure d'import demande en plus le droit CREATE PROCEDURE (rôle db_owner ou db_ddladmin)."/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

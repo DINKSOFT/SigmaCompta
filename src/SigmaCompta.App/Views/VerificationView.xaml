@@ -1,0 +1,214 @@
+<UserControl x:Class="SigmaCompta.App.Views.VerificationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:SigmaCompta.App.Controls">
+    <DockPanel>
+        <!-- ============ Synthèse + actions -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Carte}" Margin="0,0,0,18" Padding="22,18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="52" Height="52" CornerRadius="26">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource SuccesDoux}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Bloque}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource ErreurDoux}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock FontSize="{StaticResource TailleKpi}" HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icone}">
+                                <Setter Property="Text" Value="&#xE73E;"/>
+                                <Setter Property="Foreground" Value="{StaticResource Succes}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Bloque}" Value="True">
+                                        <Setter Property="Text" Value="&#xE711;"/>
+                                        <Setter Property="Foreground" Value="{StaticResource Erreur}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="16,0,16,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Synthese}" Style="{StaticResource TitreCarte}" FontSize="{StaticResource TailleTitreCarte}" TextWrapping="Wrap"/>
+                    <WrapPanel Margin="0,8,0,0">
+                        <Border Style="{StaticResource Pastille}" Background="{StaticResource SuccesDoux}" Margin="0,0,8,0">
+                            <TextBlock Style="{StaticResource TextePastille}" Foreground="{StaticResource Succes}">
+                                <Run Text="{Binding NombreOk, Mode=OneWay}"/><Run Text=" conforme(s)"/>
+                            </TextBlock>
+                        </Border>
+                        <Border Style="{StaticResource Pastille}" Background="{StaticResource AvertDoux}" Margin="0,0,8,0">
+                            <TextBlock Style="{StaticResource TextePastille}" Foreground="{StaticResource Avert}">
+                                <Run Text="{Binding NombreAvertissements, Mode=OneWay}"/><Run Text=" à surveiller"/>
+                            </TextBlock>
+                        </Border>
+                        <Border Style="{StaticResource Pastille}" Background="{StaticResource ErreurDoux}" Margin="0,0,8,0">
+                            <TextBlock Style="{StaticResource TextePastille}" Foreground="{StaticResource Erreur}">
+                                <Run Text="{Binding NombreErreurs, Mode=OneWay}"/><Run Text=" en erreur"/>
+                            </TextBlock>
+                        </Border>
+                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Discret}" Margin="4,0,0,0">
+                            <Run Text="Base"/>
+                            <Run Text="{Binding NomBase, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource TexteSecondaire}"/>
+                            <Run Text="· procédure livrée v"/><Run Text="{Binding VersionApplication, Mode=OneWay}"/>
+                        </TextBlock>
+                    </WrapPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource BoutonIcone}" Content="&#xE72C;" ToolTip="Relancer les contrôles" Command="{Binding ControlerCommand}"/>
+                    <Button Margin="8,0,0,0" Command="{Binding InstallerCommand}" ToolTip="Crée ou remplace imp.TT_LigneEcriture et imp.PS_ImportPiece (transactionnel)">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource Bouton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ProcedureAbsenteOuAncienne}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource Primaire}"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource Primaire}"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE896;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                            <TextBlock Text="Installer la procédure"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============ Pied -->
+        <Grid DockPanel.Dock="Bottom" Margin="0,18,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Command="{Binding ExecuterScriptCommand}" ToolTip="Exécute 01_preverification_schema.sql (lecture seule) et affiche chaque résultat">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE756;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                        <TextBlock Text="Script de pré-vérification"/>
+                    </StackPanel>
+                </Button>
+                <Button Margin="10,0,0,0" Style="{StaticResource BoutonFantome}" Command="{Binding ExporterScriptsCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE74E;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                        <TextBlock Text="Exporter les scripts SQL"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <Button HorizontalAlignment="Right" Style="{StaticResource BoutonPrimaire}" Command="{Binding ContinuerCommand}" Padding="20,9">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Choisir les données"/>
+                    <TextBlock Text="&#xE72A;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}" Margin="10,0,0,0"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- ============ Contenu : contrôles + résultats du script -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Carte}" Padding="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Controles}" Margin="14,8,14,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource Bordure}" BorderThickness="0,0,0,1" Padding="0,13">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="32" Height="32" CornerRadius="16" VerticalAlignment="Top"
+                                                Background="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=fond}">
+                                            <TextBlock Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}" HorizontalAlignment="Center"
+                                                       Text="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=icone}"
+                                                       Foreground="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="14,0,12,0">
+                                            <TextBlock Text="{Binding Titre}" FontWeight="SemiBold" FontSize="{StaticResource TailleTexte}"/>
+                                            <TextBlock Text="{Binding Detail}" Foreground="{StaticResource TexteSecondaire}" TextWrapping="Wrap"
+                                                       Margin="0,3,0,0" LineHeight="19"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="2" Style="{StaticResource Pastille}" VerticalAlignment="Top"
+                                                Background="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=fond}">
+                                            <TextBlock Text="{Binding Statut, Converter={StaticResource LibelleStatut}}" Style="{StaticResource TextePastille}"
+                                                       Foreground="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Résultats du script 01 -->
+            <Border Grid.Column="1" Width="18" Visibility="{Binding AfficherScript, Converter={StaticResource BoolVisibilite}}"/>
+            <Border Grid.Column="2" Style="{StaticResource Carte}" Width="560" Padding="0"
+                    Visibility="{Binding AfficherScript, Converter={StaticResource BoolVisibilite}}">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="20,16,12,10">
+                        <StackPanel>
+                            <TextBlock Text="Script 01 — pré-vérification" Style="{StaticResource TitreCarte}"/>
+                            <TextBlock Text="Lecture seule · un résultat par contrôle" Style="{StaticResource Discret}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <Button HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource BoutonIcone}" Content="&#xE711;"
+                                FontSize="{StaticResource TaillePetite}" Command="{Binding MasquerScriptCommand}" ToolTip="Masquer"/>
+                    </Grid>
+                    <ListBox DockPanel.Dock="Top" ItemsSource="{Binding Lots}" SelectedItem="{Binding LotSelectionne}" MaxHeight="210"
+                             ItemContainerStyle="{StaticResource ElementListe}" Margin="12,0,12,8">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Titre}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Titre}"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
+                                        <TextBlock Text="&#xE783;" Style="{StaticResource Icone}" Foreground="{StaticResource Erreur}" Margin="0,0,6,0"
+                                                   Visibility="{Binding EnErreur, Converter={StaticResource BoolVisibilite}}"/>
+                                        <TextBlock Style="{StaticResource Discret}" Text="{Binding NombreLignes, StringFormat={}{0} ligne(s)}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Border DockPanel.Dock="Top" Height="1" Background="{StaticResource Bordure}"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,12">
+                        <StackPanel>
+                            <Border Background="{StaticResource ErreurDoux}" CornerRadius="8" Padding="12,9" Margin="0,0,0,10"
+                                    Visibility="{Binding LotSelectionne.EnErreur, Converter={StaticResource BoolVisibilite}}">
+                                <TextBlock Text="{Binding LotSelectionne.Erreur}" TextWrapping="Wrap" Foreground="{StaticResource Erreur}"/>
+                            </Border>
+                            <ItemsControl ItemsSource="{Binding LotSelectionne.Vues}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource Bordure}" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10">
+                                            <DataGrid ItemsSource="{Binding}" AutoGenerateColumns="True" c:Aides.EntetesLisibles="True"
+                                                      MaxHeight="420" FontSize="{StaticResource TailleTexte}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding LotSelectionne.Messages}" Style="{StaticResource Code}" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TexteSecondaire}"
+                                       Visibility="{Binding LotSelectionne.Messages, Converter={StaticResource ValeurVisibilite}}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

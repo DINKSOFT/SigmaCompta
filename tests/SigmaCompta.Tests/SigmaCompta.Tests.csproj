@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>SigmaCompta.Tests</RootNamespace>
+    <AssemblyName>SigmaCompta.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- Comme sous .NET Framework : formats et comparaisons de texte Windows (NLS) plutôt qu'ICU.
+       Évite les écarts de .NET 5+ (séparateur de milliers U+202F, IndexOf sur « \r\n »…). -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SigmaCompta.Core\SigmaCompta.Core.csproj" />
+  </ItemGroup>
+
+</Project>

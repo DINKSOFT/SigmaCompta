@@ -1,0 +1,45 @@
+{
+  "VersionFormat": 1,
+  "Nom": "OD de paie (logiciel de paie)",
+  "Description": "Export comptable de paie : une pièce par mois, journal OD par défaut, n° de pièce attribué automatiquement.",
+  "Source": {
+    "Type": "Auto",
+    "Feuille": "",
+    "LigneEntete": 1,
+    "Separateur": "auto",
+    "Encodage": "windows-1252",
+    "FormatsDate": "dd/MM/yyyy|d/M/yyyy|dd/MM/yy|yyyy-MM-dd|dd-MM-yyyy|dd.MM.yyyy|ddMMyyyy|ddMMyy|yyyyMMdd",
+    "SeparateurDecimal": "auto"
+  },
+  "Colonnes": {
+    "Journal": "JO_Num|Journal|Code journal",
+    "Date": "Date|EC_Date|Date pièce|Date piece",
+    "Piece": "EC_Piece|N° pièce|N° piece|Pièce|Piece|No piece",
+    "Reference": "EC_Reference|Référence|Reference",
+    "RefPiece": "EC_RefPiece|N° facture|Ref piece|Référence pièce",
+    "CompteGeneral": "CG_Num|Compte|Compte général|Compte general|N° compte",
+    "CompteTiers": "CT_Num|Tiers|Compte tiers",
+    "Libelle": "EC_Intitule|Libellé|Libelle|Intitulé",
+    "Debit": "Débit|Debit|Montant débit",
+    "Credit": "Crédit|Credit|Montant crédit",
+    "Montant": "Montant|EC_Montant",
+    "Sens": "Sens|EC_Sens",
+    "Echeance": "EC_Echeance|Échéance|Echeance"
+  },
+  "Regroupement": "JournalDateReference",
+  "Defauts": {
+    "Journal": "OD",
+    "Libelle": "",
+    "LongueurComptes": 0
+  },
+  "Options": {
+    "NumerotationAutomatique": true,
+    "RenumeroterDoublon": true,
+    "AutoriserDoublon": false,
+    "IgnorerHash": false,
+    "ModeTransaction": "ToutOuRien",
+    "ArreterPremiereErreur": false,
+    "InverserMontantsNegatifs": true,
+    "IgnorerLignesSansMontant": true
+  }
+}

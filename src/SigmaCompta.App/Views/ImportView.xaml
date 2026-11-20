@@ -1,0 +1,316 @@
+<UserControl x:Class="SigmaCompta.App.Views.ImportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DockPanel>
+        <!-- ============ Rappel compact (pendant et après l'import, à la place du récapitulatif et des options) -->
+        <Border DockPanel.Dock="Top" Padding="18,11" Margin="0,0,0,14">
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource Carte}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding EnCours}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Termine}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock TextTrimming="CharacterEllipsis" FontSize="{StaticResource TailleTexte}">
+                <Run Text="Serveur" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="{Binding Serveur, Mode=OneWay}"/>
+                <Run Text="·" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="Base" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="{Binding NomBase, Mode=OneWay}" FontWeight="SemiBold"/>
+                <Run Text="{Binding RaisonSociale, Mode=OneWay}" Foreground="{StaticResource TexteSecondaire}"/>
+                <Run Text="·" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="Fichier" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="{Binding Fichier, Mode=OneWay}"/>
+                <Run Text="·" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="Paramètres" Foreground="{StaticResource TexteDiscret}"/>
+                <Run Text="{Binding NomProfil, Mode=OneWay}"/>
+                <Run Text="·" Foreground="{StaticResource TexteDiscret}"/>
+                <Run FontWeight="SemiBold">
+                    <Run.Style>
+                        <Style TargetType="Run">
+                            <Setter Property="Text" Value="Pièce par pièce"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ModeToutOuRien}" Value="True">
+                                    <Setter Property="Text" Value="Tout ou rien"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Run.Style>
+                </Run>
+            </TextBlock>
+        </Border>
+
+        <!-- ============ Récapitulatif + options -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,14">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding EnCours}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Termine}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Carte}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="Récapitulatif" Style="{StaticResource TitreCarte}" Margin="0,0,0,12"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Serveur" Style="{StaticResource Discret}" Margin="0,0,20,9"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Serveur}" Margin="0,0,0,9"/>
+                        <TextBlock Grid.Row="1" Text="Base" Style="{StaticResource Discret}" Margin="0,0,20,9"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,9" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding NomBase, Mode=OneWay}" FontWeight="SemiBold"/>
+                            <Run Text="{Binding RaisonSociale, Mode=OneWay}" Foreground="{StaticResource TexteSecondaire}"/>
+                        </TextBlock>
+                        <TextBlock Grid.Row="2" Text="Fichier" Style="{StaticResource Discret}" Margin="0,0,20,9"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Fichier}" Margin="0,0,0,9" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Row="3" Text="Paramètres" Style="{StaticResource Discret}" Margin="0,0,20,0"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding NomProfil}" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                    <Border Style="{StaticResource Separateur}" Margin="0,12"/>
+                    <UniformGrid Columns="3">
+                        <StackPanel>
+                            <TextBlock Text="PIÈCES À IMPORTER" Style="{StaticResource KpiLibelle}"/>
+                            <TextBlock Text="{Binding NombreAImporter}" Style="{StaticResource Kpi}" Foreground="{StaticResource Primaire}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="LIGNES" Style="{StaticResource KpiLibelle}"/>
+                            <TextBlock Text="{Binding NombreLignesAImporter, StringFormat={}{0:N0}}" Style="{StaticResource Kpi}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="MONTANT (DÉBIT)" Style="{StaticResource KpiLibelle}"/>
+                            <TextBlock Text="{Binding MontantAImporter, StringFormat={}{0:#,##0.##}}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock Margin="0,12,0,0" Foreground="{StaticResource Avert}" TextWrapping="Wrap"
+                               Visibility="{Binding NombreExclues, Converter={StaticResource ValeurVisibilite}}">
+                        <Run Text="{Binding NombreExclues, Mode=OneWay}"/><Run Text=" pièce(s) exclue(s) : erreurs locales ou refus en simulation."/>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Carte}" Padding="20,18">
+                <StackPanel>
+                    <TextBlock Text="Options d'import" Style="{StaticResource TitreCarte}" Margin="0,0,0,10"/>
+                    <Border Style="{StaticResource Segments}">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" GroupName="mode" Content="Pièce par pièce" IsChecked="{Binding ModeParPiece}"/>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="mode" Content="Tout ou rien" IsChecked="{Binding ModeToutOuRien}"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Margin="2,6,0,10" LineHeight="18">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Discret}">
+                                <Setter Property="Text" Value="Chaque pièce acceptée est enregistrée aussitôt ; une pièce refusée n'empêche pas les autres."/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ModeToutOuRien}" Value="True">
+                                        <Setter Property="Text" Value="Une seule transaction : si une pièce est refusée, aucune n'est enregistrée."/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Style="{StaticResource Interrupteur}" Content="Arrêter à la première pièce refusée" IsChecked="{Binding ArreterPremiereErreur}"
+                              Margin="0,0,0,8" Visibility="{Binding ModeParPiece, Converter={StaticResource BoolVisibilite}}"/>
+                    <CheckBox Style="{StaticResource Interrupteur}" Content="Exclure les pièces refusées en simulation" IsChecked="{Binding ExclureRefusees}" Margin="0,0,0,8"/>
+                    <CheckBox Style="{StaticResource Interrupteur}" Content="N° de pièce déjà utilisé : prendre le n° suivant" IsChecked="{Binding RenumeroterDoublon}" Margin="0,0,0,8"
+                              ToolTip="La pièce reçoit le numéro qui suit la dernière pièce de la même séquence dans le journal, et l'import continue."/>
+                    <CheckBox Style="{StaticResource Interrupteur}" Content="Autoriser un n° de pièce déjà utilisé" IsChecked="{Binding AutoriserDoublon}" Margin="0,0,0,8"
+                              ToolTip="Garde le numéro du fichier même s'il existe déjà (deux pièces porteront le même n°)."/>
+                    <CheckBox Style="{StaticResource Interrupteur}" IsChecked="{Binding IgnorerHash}">
+                        <StackPanel>
+                            <TextBlock Text="Ignorer le chaînage d'inaltérabilité (cbHash)"/>
+                            <TextBlock Text="Déconseillé : les écritures ne seront pas intégrées au chaînage d'inaltérabilité." Style="{StaticResource Discret}" Foreground="{StaticResource Avert}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============ Lancement / progression / bilan -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Carte}" Margin="0,0,0,14" Padding="20,14">
+            <StackPanel>
+                <!-- Blocage -->
+                <Border Background="{StaticResource AvertDoux}" CornerRadius="10" Padding="14,9" Margin="0,0,0,12">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="{Binding MessageBlocage, Converter={StaticResource ValeurVisibilite}}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Termine}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <DockPanel>
+                        <TextBlock Text="&#xE7BA;" Style="{StaticResource Icone}" Foreground="{StaticResource Avert}" Margin="0,0,10,0" VerticalAlignment="Top"/>
+                        <TextBlock Text="{Binding MessageBlocage}" TextWrapping="Wrap" Foreground="{StaticResource Avert}"/>
+                    </DockPanel>
+                </Border>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                        <TextBlock FontSize="{StaticResource TailleTitreCarte}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource TitreCarte}">
+                                    <Setter Property="Text" Value="Prêt pour l'écriture en comptabilité"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding EnCours}" Value="True">
+                                            <Setter Property="Text" Value="Import en cours…"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Termine}" Value="True">
+                                            <Setter Property="Text" Value="Import terminé"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Discret}" Margin="0,3,0,0" FontSize="{StaticResource TailleTexte}"
+                                   Visibility="{Binding SimulationFaite, Converter={StaticResource BoolVisibilite}, ConverterParameter=inverse}"
+                                   Text="La simulation n'a pas été lancée : elle est recommandée avant un import réel (étape Contrôle)."/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource BoutonDanger}" Content="Interrompre" Command="{Binding AnnulerCommand}" Margin="0,0,10,0"
+                                Visibility="{Binding EnCours, Converter={StaticResource BoolVisibilite}}"/>
+                        <Button Style="{StaticResource BoutonVedette}" Command="{Binding LancerCommand}"
+                                Visibility="{Binding Termine, Converter={StaticResource BoolVisibilite}, ConverterParameter=inverse}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE898;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTitreCarte}" Margin="0,0,10,0"/>
+                                <TextBlock Text="Lancer l'import"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Progression -->
+                <StackPanel Margin="0,12,0,0">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding EnCours}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Termine}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <ProgressBar Value="{Binding Progression, Mode=OneWay}" Maximum="100" Height="10"/>
+                    <Grid Margin="0,8,0,0">
+                        <TextBlock Text="{Binding MessageProgression}" Style="{StaticResource Discret}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Foreground="{StaticResource Succes}" FontWeight="SemiBold" Margin="0,0,16,0">
+                                <Run Text="&#xE73E;" FontFamily="{StaticResource PoliceIcones}"/>
+                                <Run Text="{Binding NombreImportees, Mode=OneWay}"/><Run Text=" importée(s)"/>
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource Erreur}" FontWeight="SemiBold" Margin="0,0,16,0">
+                                <Run Text="&#xE711;" FontFamily="{StaticResource PoliceIcones}"/>
+                                <Run Text="{Binding NombreEchecs, Mode=OneWay}"/><Run Text=" refusée(s)"/>
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource TexteSecondaire}" FontWeight="SemiBold">
+                                <Run Text="{Binding NombreAnnulees, Mode=OneWay}"/><Run Text=" annulée(s)"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Bilan -->
+                <Border Margin="0,12,0,0" CornerRadius="12" Padding="14,10"
+                        Background="{Binding TypeBilan, Converter={StaticResource Statut}, ConverterParameter=fond}"
+                        Visibility="{Binding Bilan, Converter={StaticResource ValeurVisibilite}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Style="{StaticResource Icone}" FontSize="{StaticResource TailleKpi}" Margin="0,0,14,0"
+                                   Text="{Binding TypeBilan, Converter={StaticResource Statut}, ConverterParameter=icone}"
+                                   Foreground="{Binding TypeBilan, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Bilan}" FontWeight="SemiBold" FontSize="{StaticResource TailleAccent}" TextWrapping="Wrap"
+                                       Foreground="{Binding TypeBilan, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                            <TextBlock Style="{StaticResource Discret}" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                       Visibility="{Binding CheminRapport, Converter={StaticResource ValeurVisibilite}}">
+                                <Run Text="Rapport enregistré :"/><Run Text=" "/><Run Text="{Binding CheminRapport, Mode=OneWay}"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Ouvrir le rapport" Command="{Binding OuvrirRapportCommand}" Margin="0,0,8,0"/>
+                            <Button Content="Historique" Command="{Binding HistoriqueCommand}" Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource BoutonPrimaire}" Content="Nouvel import" Command="{Binding NouvelImportCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- ============ Résultat par pièce -->
+        <Border Style="{StaticResource Carte}" Padding="0">
+            <Grid>
+                <TextBlock Text="Le résultat de chaque pièce s'affichera ici pendant l'import." Style="{StaticResource Discret}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Visibility="{Binding Resultats.Count, Converter={StaticResource ValeurVisibilite}, ConverterParameter=inverse}"/>
+                <DataGrid ItemsSource="{Binding Resultats}" AutoGenerateColumns="False" Margin="2"
+                          Visibility="{Binding Resultats.Count, Converter={StaticResource ValeurVisibilite}}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="STATUT" Width="128" MinWidth="128">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Pastille}" Background="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=fond}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icone}" FontSize="{StaticResource TailleMini}" Margin="0,0,5,0"
+                                                       Text="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=icone}"
+                                                       Foreground="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                                            <TextBlock Text="{Binding StatutLibelle}" Style="{StaticResource TextePastille}"
+                                                       Foreground="{Binding Statut, Converter={StaticResource Statut}, ConverterParameter=texte}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="N°" Binding="{Binding Numero}" Width="44" MinWidth="44"/>
+                        <DataGridTextColumn Header="JOURNAL" Binding="{Binding Journal}" Width="76" MinWidth="76" FontWeight="SemiBold"/>
+                        <DataGridTextColumn Header="DATE" Binding="{Binding Date, StringFormat={}{0:dd/MM/yyyy}}" Width="88" MinWidth="88"/>
+                        <DataGridTextColumn Header="PIÈCE" Binding="{Binding PieceAffichee}" Width="90" MinWidth="90" FontWeight="SemiBold" ElementStyle="{StaticResource CelluleTexte}"/>
+                        <DataGridTextColumn Header="EC_NO" Binding="{Binding PlageEcNo}" Width="104" MinWidth="104" ElementStyle="{StaticResource CelluleTexte}"/>
+                        <DataGridTextColumn Header="LIGNES" Binding="{Binding NombreLignes}" Width="62" MinWidth="62" ElementStyle="{StaticResource CelluleDroite}"/>
+                        <DataGridTextColumn Header="DÉBIT" Binding="{Binding TotalDebit, StringFormat={}{0:#,##0.##}}" Width="96" MinWidth="96" ElementStyle="{StaticResource CelluleDroite}"/>
+                        <DataGridTextColumn Header="MESSAGE" Binding="{Binding Resume}" Width="*" MinWidth="200" ElementStyle="{StaticResource CelluleTexte}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </DockPanel>
+</UserControl>

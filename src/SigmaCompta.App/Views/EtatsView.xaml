@@ -1,0 +1,290 @@
+<UserControl x:Class="SigmaCompta.App.Views.EtatsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:SigmaCompta.App.Controls">
+    <UserControl.Resources>
+        <Style x:Key="CarteKpiCompacte" TargetType="Border" BasedOn="{StaticResource CarteKpi}">
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+        <Style x:Key="BlocParametre" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,14,8"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+        <!-- Lignes de regroupement : titres de compte / journal, ouverture, totaux -->
+        <Style x:Key="LigneEtat" TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Genre}" Value="Entete">
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Foreground" Value="{StaticResource PrimaireFonce}"/>
+                    <Setter Property="Background" Value="{StaticResource PrimaireDoux}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Genre}" Value="Report">
+                    <Setter Property="FontStyle" Value="Italic"/>
+                    <Setter Property="Background" Value="{StaticResource SurfaceAlt}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Genre}" Value="SousTotal">
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Background" Value="{StaticResource SurfaceAlt}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Genre}" Value="Total">
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Background" Value="{StaticResource SurfaceAlt}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Genre}" Value="TotalGeneral">
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Foreground" Value="{StaticResource PrimaireFonce}"/>
+                    <Setter Property="Background" Value="{StaticResource PrimaireDoux}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- ============ Choix de l'état et paramètres -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Carte}" Padding="16,12" Margin="0,0,0,12">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Segments}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Style="{StaticResource Segment}" GroupName="etat" Content="Balance"
+                                         IsChecked="{Binding EtatChoisi, Converter={StaticResource EgalVersBool}, ConverterParameter=Balance}"/>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="etat" Content="Grand livre"
+                                         IsChecked="{Binding EtatChoisi, Converter={StaticResource EgalVersBool}, ConverterParameter=GrandLivre}"/>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="etat" Content="Journaux"
+                                         IsChecked="{Binding EtatChoisi, Converter={StaticResource EgalVersBool}, ConverterParameter=Journal}"/>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="etat" Content="Centralisateur"
+                                         IsChecked="{Binding EtatChoisi, Converter={StaticResource EgalVersBool}, ConverterParameter=Centralisateur}"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Command="{Binding ImprimerCommand}" Margin="0,0,8,0" ToolTip="Ouvre l'état en PDF pour l'imprimer (Ctrl+P)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE749;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                <TextBlock Text="Imprimer"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding PdfCommand}" Margin="0,0,8,0" ToolTip="Enregistrer l'état en PDF">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8A5;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                <TextBlock Text="PDF"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ExporterCommand}" Margin="0,0,8,0" ToolTip="Exporter l'état en classeur Excel">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE896;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                <TextBlock Text="Excel"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource BoutonPrimaire}" Command="{Binding GenererCommand}" Padding="20,9">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE768;" Style="{StaticResource Icone}" Margin="0,0,8,0"/>
+                                <TextBlock Text="Générer"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding AideEtat}" Style="{StaticResource Discret}" Margin="2,8,0,10" TextWrapping="Wrap"/>
+
+                <!-- Paramètres (passent à la ligne sur un écran étroit) -->
+                <WrapPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}">
+                        <TextBlock Text="Exercice" Style="{StaticResource Etiquette}"/>
+                        <ComboBox Width="200" ItemsSource="{Binding Exercices}" SelectedItem="{Binding ExerciceSelectionne}"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}" Margin="0,0,8,8">
+                        <TextBlock Text="Du" Style="{StaticResource Etiquette}"/>
+                        <c:ChampDate Width="124" Texte="{Binding DuTexte}"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}">
+                        <TextBlock Text="Au" Style="{StaticResource Etiquette}"/>
+                        <c:ChampDate Width="124" Texte="{Binding AuTexte}"/>
+                    </StackPanel>
+
+                    <!-- Balance et grand livre -->
+                    <StackPanel Style="{StaticResource BlocParametre}" Visibility="{Binding AvecComptes, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Comptes" Style="{StaticResource Etiquette}"/>
+                        <Border Style="{StaticResource Segments}">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource Segment}" GroupName="natureEtat" Content="Généraux" IsChecked="{Binding NatureGenerale}"/>
+                                <RadioButton Style="{StaticResource Segment}" GroupName="natureEtat" Content="Tiers" IsChecked="{Binding NatureTiers}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}" Margin="0,0,8,8" Visibility="{Binding AvecComptes, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Du compte" Style="{StaticResource Etiquette}"/>
+                        <TextBox Width="104" Text="{Binding CompteDe, UpdateSourceTrigger=LostFocus}" Tag="premier"
+                                 ToolTip="Vide = depuis le premier compte"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}" Visibility="{Binding AvecComptes, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Au compte" Style="{StaticResource Etiquette}"/>
+                        <TextBox Width="104" Text="{Binding CompteA, UpdateSourceTrigger=LostFocus}" Tag="dernier"
+                                 ToolTip="Début du numéro : « 6 » va jusqu'au dernier compte de la classe 6"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}" Visibility="{Binding AvecTypeTiers, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Type de tiers" Style="{StaticResource Etiquette}"/>
+                        <ComboBox Width="150" ItemsSource="{Binding TypesTiersChoix}" SelectedItem="{Binding TypeTiersChoisi}" DisplayMemberPath="Libelle"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource BlocParametre}" Visibility="{Binding AvecComptes, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Journal des à-nouveaux" Style="{StaticResource Etiquette}"/>
+                        <ComboBox Width="200" ItemsSource="{Binding JournauxANouveauxChoix}" SelectedItem="{Binding JournalANouveauxChoisi}" DisplayMemberPath="Libelle"
+                                  ToolTip="Ses écritures de la période sont classées en solde d'ouverture, pas en mouvements"/>
+                    </StackPanel>
+                    <CheckBox Style="{StaticResource Interrupteur}" IsChecked="{Binding InclureComptesSoldes}" VerticalAlignment="Bottom" Margin="0,0,14,12"
+                              Visibility="{Binding EstBalance, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Comptes soldés"/>
+                    </CheckBox>
+
+                    <!-- Journaux et centralisateur -->
+                    <StackPanel Style="{StaticResource BlocParametre}" Visibility="{Binding AvecJournal, Converter={StaticResource BoolVisibilite}}">
+                        <TextBlock Text="Journal" Style="{StaticResource Etiquette}"/>
+                        <ComboBox Width="240" ItemsSource="{Binding JournauxChoix}" SelectedItem="{Binding JournalChoisi}" DisplayMemberPath="Libelle"/>
+                    </StackPanel>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ============ Avertissements (déséquilibres, à-nouveaux) -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Encart}" Background="{StaticResource AvertDoux}" BorderBrush="#F3D9A6" Margin="0,0,0,12"
+                Visibility="{Binding AAvertissements, Converter={StaticResource BoolVisibilite}}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" Style="{StaticResource Icone}" Foreground="{StaticResource Avert}" Margin="0,1,10,0" VerticalAlignment="Top"/>
+                <ScrollViewer MaxHeight="88" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Avertissements}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,0,0,3"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ============ Indicateurs -->
+        <UniformGrid DockPanel.Dock="Top" Columns="4" Margin="0,0,0,12">
+            <Border Style="{StaticResource CarteKpiCompacte}">
+                <StackPanel>
+                    <TextBlock Text="DÉBIT DE LA PÉRIODE" Style="{StaticResource KpiLibelle}"/>
+                    <TextBlock Text="{Binding TotalDebit, StringFormat={}{0:#,##0.##}}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CarteKpiCompacte}">
+                <StackPanel>
+                    <TextBlock Text="CRÉDIT DE LA PÉRIODE" Style="{StaticResource KpiLibelle}"/>
+                    <TextBlock Text="{Binding TotalCredit, StringFormat={}{0:#,##0.##}}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CarteKpiCompacte}">
+                <StackPanel>
+                    <TextBlock Text="ÉCART DÉBIT − CRÉDIT" Style="{StaticResource KpiLibelle}"/>
+                    <TextBlock Text="{Binding EcartLibelle}" FontSize="{StaticResource TailleKpi}" Margin="0,6,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Kpi}">
+                                <Setter Property="Foreground" Value="{StaticResource Succes}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding EcartNonNul}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Avert}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding AResultat}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource TexteDiscret}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CarteKpiCompacte}" Margin="0">
+                <StackPanel>
+                    <TextBlock Text="{Binding CompteurTitre}" Style="{StaticResource KpiLibelle}"/>
+                    <TextBlock Text="{Binding CompteurLibelle}" Style="{StaticResource Kpi}" FontSize="{StaticResource TailleKpi}" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- ============ État calculé -->
+        <Border Style="{StaticResource Carte}" Padding="0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="16,12,16,10">
+                    <TextBlock Text="{Binding TitreResultat}" Style="{StaticResource TitreCarte}"/>
+                    <TextBlock Text="{Binding SousTitreResultat}" Style="{StaticResource Discret}" Margin="0,2,0,0"/>
+                    <TextBlock Text="Paramètres modifiés : clique sur Générer pour mettre l'état à jour." Foreground="{StaticResource Avert}" Margin="0,4,0,0"
+                               Visibility="{Binding ResultatPerime, Converter={StaticResource BoolVisibilite}}"/>
+                </StackPanel>
+                <Grid>
+                    <!-- Balance -->
+                    <DataGrid ItemsSource="{Binding Lignes}" AutoGenerateColumns="False" Margin="2" RowStyle="{StaticResource LigneEtat}"
+                              Visibility="{Binding AfficheBalance, Converter={StaticResource BoolVisibilite}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="COMPTE" Binding="{Binding Compte}" Width="96"/>
+                            <DataGridTextColumn Header="INTITULÉ" Binding="{Binding Libelle}" Width="*" MinWidth="160" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="OUV. DÉBIT" Binding="{Binding OuvertureDebit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="OUV. CRÉDIT" Binding="{Binding OuvertureCredit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="MVT DÉBIT" Binding="{Binding MouvementDebit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="MVT CRÉDIT" Binding="{Binding MouvementCredit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="SOLDE DÉBIT" Binding="{Binding SoldeDebit, StringFormat={}{0:#,##0.##}}" Width="110" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="SOLDE CRÉDIT" Binding="{Binding SoldeCredit, StringFormat={}{0:#,##0.##}}" Width="110" ElementStyle="{StaticResource CelluleDroite}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Grand livre -->
+                    <DataGrid ItemsSource="{Binding Lignes}" AutoGenerateColumns="False" Margin="2" RowStyle="{StaticResource LigneEtat}"
+                              Visibility="{Binding AfficheGrandLivre, Converter={StaticResource BoolVisibilite}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="DATE" Binding="{Binding Date, StringFormat={}{0:dd/MM/yyyy}}" Width="86"/>
+                            <DataGridTextColumn Header="JNL" Binding="{Binding Journal}" Width="58"/>
+                            <DataGridTextColumn Header="PIÈCE" Binding="{Binding Piece}" Width="78"/>
+                            <DataGridTextColumn Header="LIBELLÉ" Binding="{Binding Libelle}" Width="*" MinWidth="160" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="CPTE ASSOCIÉ" Binding="{Binding CompteAssocie}" Width="96"/>
+                            <DataGridTextColumn Header="DÉBIT" Binding="{Binding Debit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="CRÉDIT" Binding="{Binding Credit, StringFormat={}{0:#,##0.##}}" Width="106" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="SOLDE" Binding="{Binding SoldeLibelle}" Width="122" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="LETTR." Binding="{Binding Lettrage}" Width="56"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Journaux -->
+                    <DataGrid ItemsSource="{Binding Lignes}" AutoGenerateColumns="False" Margin="2" RowStyle="{StaticResource LigneEtat}"
+                              Visibility="{Binding AfficheJournal, Converter={StaticResource BoolVisibilite}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="DATE" Binding="{Binding Date, StringFormat={}{0:dd/MM/yyyy}}" Width="86"/>
+                            <DataGridTextColumn Header="PIÈCE" Binding="{Binding Piece}" Width="78"/>
+                            <DataGridTextColumn Header="RÉFÉRENCE" Binding="{Binding RefPiece}" Width="96"/>
+                            <DataGridTextColumn Header="COMPTE" Binding="{Binding Compte}" Width="96"/>
+                            <DataGridTextColumn Header="TIERS" Binding="{Binding CompteTiers}" Width="90"/>
+                            <DataGridTextColumn Header="LIBELLÉ" Binding="{Binding Libelle}" Width="*" MinWidth="160" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="DÉBIT" Binding="{Binding Debit, StringFormat={}{0:#,##0.##}}" Width="110" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="CRÉDIT" Binding="{Binding Credit, StringFormat={}{0:#,##0.##}}" Width="110" ElementStyle="{StaticResource CelluleDroite}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Centralisateur -->
+                    <DataGrid ItemsSource="{Binding Lignes}" AutoGenerateColumns="False" Margin="2" RowStyle="{StaticResource LigneEtat}"
+                              Visibility="{Binding AfficheCentralisateur, Converter={StaticResource BoolVisibilite}}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="PÉRIODE" Binding="{Binding Periode}" Width="150"/>
+                            <DataGridTextColumn Header="JOURNAL" Binding="{Binding Journal}" Width="90"/>
+                            <DataGridTextColumn Header="INTITULÉ" Binding="{Binding Libelle}" Width="*" MinWidth="160" ElementStyle="{StaticResource CelluleTexte}"/>
+                            <DataGridTextColumn Header="DÉBIT" Binding="{Binding Debit, StringFormat={}{0:#,##0.##}}" Width="130" ElementStyle="{StaticResource CelluleDroite}"/>
+                            <DataGridTextColumn Header="CRÉDIT" Binding="{Binding Credit, StringFormat={}{0:#,##0.##}}" Width="130" ElementStyle="{StaticResource CelluleDroite}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Visibility="{Binding AResultat, Converter={StaticResource BoolVisibilite}, ConverterParameter=inverse}">
+                        <TextBlock Text="&#xE8A5;" Style="{StaticResource Icone}" FontSize="28" Foreground="{StaticResource BordureForte}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Choisis un état et une période, puis Générer" FontWeight="SemiBold" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                        <TextBlock Text="L'état s'affiche ici avec ses totaux ; Exporter l'enregistre en classeur Excel."
+                                   Style="{StaticResource Discret}" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="Aucune écriture sur cette période." Style="{StaticResource Discret}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding AucuneLigne, Converter={StaticResource BoolVisibilite}}"/>
+                </Grid>
+            </DockPanel>
+        </Border>
+    </DockPanel>
+</UserControl>

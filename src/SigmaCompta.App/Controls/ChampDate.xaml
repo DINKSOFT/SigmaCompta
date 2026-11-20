@@ -1,0 +1,62 @@
+<UserControl x:Class="SigmaCompta.App.Controls.ChampDate"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False">
+    <UserControl.Resources>
+        <!-- Bouton calendrier posé dans la zone de texte -->
+        <Style x:Key="BoutonCalendrier" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="fond" Background="Transparent" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="fond" Property="Background" Value="{StaticResource SurfaceSurvol}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Primaire}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="fond" Property="Background" Value="{StaticResource PrimaireDoux}"/>
+                                <Setter Property="Foreground" Value="{StaticResource Primaire}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- La frappe reste libre (jour seul, 17/10, 17/10/2026…) ; la valeur est transmise en quittant le champ -->
+        <TextBox x:Name="Saisie" Padding="8,4,30,4" PreviewKeyDown="Saisie_PreviewKeyDown"/>
+        <ToggleButton x:Name="Bouton" Style="{StaticResource BoutonCalendrier}" HorizontalAlignment="Right" Width="24" Margin="0,3,3,3"
+                      ToolTip="Choisir dans le calendrier (F4)"
+                      IsChecked="{Binding IsOpen, ElementName=Fenetre, Mode=TwoWay}"
+                      IsHitTestVisible="{Binding IsOpen, ElementName=Fenetre, Converter={StaticResource InverseBool}}">
+            <TextBlock Text="&#xE787;" Style="{StaticResource Icone}" FontSize="{StaticResource TailleTexte}"/>
+        </ToggleButton>
+
+        <Popup x:Name="Fenetre" PlacementTarget="{Binding ElementName=Saisie}" Placement="Bottom" StaysOpen="False"
+               AllowsTransparency="True" PopupAnimation="Fade" Opened="Fenetre_Opened">
+            <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Bordure}" BorderThickness="1" CornerRadius="10"
+                    Padding="6" Margin="0,4,10,10" Effect="{StaticResource OmbreFlottante}">
+                <StackPanel>
+                    <Calendar x:Name="Calendrier" SelectionMode="SingleDate" IsTodayHighlighted="True"
+                              Background="Transparent" BorderThickness="0"
+                              PreviewMouseUp="Calendrier_PreviewMouseUp" PreviewKeyDown="Calendrier_PreviewKeyDown"/>
+                    <DockPanel Margin="4,2,4,0">
+                        <TextBlock DockPanel.Dock="Left" Text="Entrée choisit · Échap ferme" Style="{StaticResource Discret}"
+                                   FontSize="{StaticResource TaillePetite}" VerticalAlignment="Center"/>
+                        <Button x:Name="BoutonAujourdhui" Content="Aujourd'hui" Style="{StaticResource BoutonFantome}" HorizontalAlignment="Right"
+                                Padding="8,2" MinHeight="24" Click="Aujourdhui_Click"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

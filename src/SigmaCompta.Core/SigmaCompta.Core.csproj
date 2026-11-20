@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>SigmaCompta.Core</RootNamespace>
+    <AssemblyName>SigmaCompta.Core</AssemblyName>
+    <Version>2.0.0</Version>
+    <Company>Dinasie</Company>
+    <Product>Sigma Compta</Product>
+    <Description>Cœur métier de l'import d'écritures comptables (SQL Server).</Description>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- Scripts SQL embarqués : nom logique fixe « Scripts.<fichier> » lu par ScriptsEmbarques. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\*.sql" LogicalName="Scripts.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
