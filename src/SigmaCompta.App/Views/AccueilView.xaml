@@ -16,11 +16,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="fond" Background="{StaticResource Surface}" BorderBrush="{StaticResource Bordure}"
-                                BorderThickness="1" CornerRadius="10" Effect="{StaticResource OmbreCarte}" Padding="8,14,8,10"
-                                RenderTransformOrigin="0.5,0.5">
-                            <Border.RenderTransform>
-                                <TranslateTransform x:Name="decalage"/>
-                            </Border.RenderTransform>
+                                BorderThickness="1" CornerRadius="10" Effect="{StaticResource OmbreCarte}" Padding="8,14,8,10">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
@@ -37,10 +33,15 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="fond" Property="BorderBrush" Value="{StaticResource PrimaireBordure}"/>
                                 <Setter TargetName="fond" Property="Background" Value="{StaticResource PrimaireDoux}"/>
-                                <Setter TargetName="decalage" Property="Y" Value="-2"/>
+                                <!-- Légère élévation au survol (une transformation ne peut pas être ciblée par TargetName : on la remplace). -->
+                                <Setter TargetName="fond" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="-2"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="decalage" Property="Y" Value="0"/>
+                                <Setter TargetName="fond" Property="RenderTransform" Value="{x:Static Transform.Identity}"/>
                                 <Setter TargetName="fond" Property="BorderBrush" Value="{StaticResource Primaire}"/>
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
