@@ -518,19 +518,21 @@ namespace SigmaCompta.Tests
             });
             Verif(br.Lignes.Count == 4 && br.Lignes[3].Genre == GenreLigne.TotalGeneral && br.TotalDebit == 60 && br.TotalCredit == 50
                   && br.NombrePieces == 2 && br.Lignes[1].Debit == null, "brouillard de la période et son total");
-            var sit = ServiceSaisie.Situation("5711000", "Caisse", 224054m, new[]
+            var sit = ServiceSaisie.Situation("5711000", "Caisse", -224054m, new[]
             {
                 new LigneEtat { Genre = GenreLigne.Detail, Compte = "5711000", Debit = 1755300m },
                 new LigneEtat { Genre = GenreLigne.Detail, Compte = "5711000 ", Credit = 2223148m },
                 new LigneEtat { Genre = GenreLigne.Detail, Compte = "4211010", Debit = 70000m },
                 new LigneEtat { Genre = GenreLigne.TotalGeneral, Compte = "5711000", Debit = 9m }
             });
-            Verif(sit.MouvementsDebit == 1755300m && sit.MouvementsCredit == 2223148m && sit.NouveauSolde == -243794m
-                  && sit.AncienDebit == 224054m && sit.AncienCredit == null && sit.NouveauCredit == 243794m && sit.NouveauDebit == null,
+            // Chiffres de la fenêtre Journal du logiciel comptable : 224 054 C + 1 755 300 D − 2 223 148 C = 691 902 C.
+            Verif(sit.MouvementsDebit == 1755300m && sit.MouvementsCredit == 2223148m && sit.NouveauSolde == -691902m
+                  && sit.AncienCredit == 224054m && sit.AncienDebit == null && sit.NouveauCredit == 691902m && sit.NouveauDebit == null,
                   "trésorerie du journal : ancien solde, mouvements du compte, nouveau solde");
-            var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true, true);
-            Verif(reqSolde.Contains("e.EC_Date >= @debut") && reqSolde.Contains("e.JO_Num = @jan") && !ServiceSaisie.RequeteSoldeAnterieur(false, false).Contains("@jan"),
-                  "solde antérieur : depuis le début de l'exercice, à-nouveaux compris");
+            var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true);
+            Verif(reqSolde.Contains("e.EC_Date >= @debut") && reqSolde.Contains("e.JO_Num = @journal") && reqSolde.Contains("e.EC_Date < @du")
+                  && !ServiceSaisie.RequeteSoldeAnterieur(false).Contains("@debut"),
+                  "ancien solde : compte de trésorerie dans ce journal, depuis le début de l'exercice");
             var relue = ServiceSaisie.InterpreterLigne(refS, lignesS[1].VersSaisie(), "", out err);
             Verif(relue != null && relue.Debit == 100000 && relue.CompteGeneral == "6052000" && relue.Libelle == "Facture SONABEL",
                   "ligne remise en saisie pour modification, relue à l'identique");

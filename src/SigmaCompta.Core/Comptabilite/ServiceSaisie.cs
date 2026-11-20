@@ -368,37 +368,31 @@ namespace SigmaCompta.Core.Comptabilite
         // ================================================================ Compte de trésorerie du journal
 
         /// <summary>
-        /// Solde du compte avant la période : écritures depuis le début de l'exercice (<c>@debut</c>, facultatif)
-        /// jusqu'à la veille de la période (<c>@du</c>), plus les à-nouveaux (<c>@jan</c>) datés dans la période,
-        /// qui ouvrent l'exercice le premier jour du premier mois. Paramètres : @compte, [@debut], @du, [@auExclu, @jan].
+        /// Ancien solde du compte de trésorerie, calculé comme le logiciel comptable : écritures du compte
+        /// passées dans ce journal depuis le début de l'exercice (<c>@debut</c>, facultatif) jusqu'à la veille
+        /// de la période (<c>@du</c>). Les écritures du même compte dans d'autres journaux n'y entrent pas.
+        /// Paramètres : @compte, @journal, [@debut], @du.
         /// </summary>
-        public static string RequeteSoldeAnterieur(bool avecDebut, bool avecJournalANouveaux)
+        public static string RequeteSoldeAnterieur(bool avecDebut)
         {
             return "SELECT SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS Debit, " +
                    "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS Credit " +
-                   "FROM dbo.F_ECRITUREC e WHERE e.CG_Num = @compte" +
+                   "FROM dbo.F_ECRITUREC e WHERE e.CG_Num = @compte AND e.JO_Num = @journal" +
                    (avecDebut ? " AND e.EC_Date >= @debut" : "") +
-                   " AND (e.EC_Date < @du" + (avecJournalANouveaux ? " OR (e.EC_Date < @auExclu AND e.JO_Num = @jan)" : "") + ")";
+                   " AND e.EC_Date < @du";
         }
 
-        /// <summary>Solde (débit − crédit) du compte de trésorerie <paramref name="compte"/> au début de la période.</summary>
+        /// <summary>Solde (débit − crédit) du compte de trésorerie <paramref name="compte"/> dans le journal, au début de la période.</summary>
         public static async Task<decimal> LireSoldeAnterieurAsync(SqlConnection c, string compte, string journal, PeriodeSaisie periode,
                                                                   Referentiel r, CancellationToken ct = default(CancellationToken))
         {
             var exo = r == null ? null : r.Exercices.Where(e => e.Contient(periode.Mois)).OrderByDescending(e => e.Debut).FirstOrDefault();
-            var jan = ServiceEtats.DetecterJournalANouveaux(r);
-            // Le journal saisi est lui-même celui des à-nouveaux : ses écritures de la période sont déjà les mouvements.
-            bool avecJan = jan != null && !string.Equals(jan, (journal ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
-            using (var cmd = SqlOutils.Commande(c, RequeteSoldeAnterieur(exo != null, avecJan), 120))
+            using (var cmd = SqlOutils.Commande(c, RequeteSoldeAnterieur(exo != null), 120))
             {
                 cmd.Parameters.Add(new SqlParameter("@compte", SqlDbType.VarChar, 13) { Value = (compte ?? "").Trim() });
+                cmd.Parameters.Add(new SqlParameter("@journal", SqlDbType.VarChar, 13) { Value = (journal ?? "").Trim() });
                 if (exo != null) cmd.Parameters.Add(new SqlParameter("@debut", SqlDbType.DateTime) { Value = exo.Debut.Date });
                 cmd.Parameters.Add(new SqlParameter("@du", SqlDbType.DateTime) { Value = periode.Mois });
-                if (avecJan)
-                {
-                    cmd.Parameters.Add(new SqlParameter("@auExclu", SqlDbType.DateTime) { Value = periode.Mois.AddMonths(1) });
-                    cmd.Parameters.Add(new SqlParameter("@jan", SqlDbType.VarChar, 13) { Value = jan });
-                }
                 using (var rd = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
                 {
                     if (!await rd.ReadAsync(ct).ConfigureAwait(false)) return 0m;
