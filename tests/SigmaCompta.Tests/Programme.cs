@@ -423,7 +423,7 @@ namespace SigmaCompta.Tests
                 sqlB, sqlG, ServiceEtats.RequeteJournal(true), ServiceEtats.RequeteCentralisateur(true),
                 ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.Tiers, new PlageComptes("", ""), true),
                 ServiceConsultation.RequeteLignes(NatureCompte.General, FiltreLettrage.Toutes, true, true), ServiceConsultation.RequeteReport(NatureCompte.Tiers),
-                ServiceSaisie.RequeteSoldeAnterieur(true)
+                ServiceSaisie.RequeteSoldeAnterieur(true, true)
             };
             Verif(requetesDates.All(q => !q.Contains("e.EC_Date")) && ServiceEtats.RequeteJournal(false).Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) AS EC_Date")
                   && ServiceEtats.RequeteJournal(false).Contains("ORDER BY e.JO_Num, DATEADD(day, e.EC_Jour - 1, e.JM_Date), e.EC_Piece"),
@@ -552,10 +552,18 @@ namespace SigmaCompta.Tests
             Verif(sit.MouvementsDebit == 1755300m && sit.MouvementsCredit == 2223148m && sit.NouveauSolde == -691902m
                   && sit.AncienCredit == 224054m && sit.AncienDebit == null && sit.NouveauCredit == 691902m && sit.NouveauDebit == null,
                   "trésorerie du journal : ancien solde, mouvements du compte, nouveau solde");
-            var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true);
-            Verif(reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) >= @debut") && reqSolde.Contains("e.JO_Num = @journal") && reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du")
-                  && !ServiceSaisie.RequeteSoldeAnterieur(false).Contains("@debut"),
-                  "ancien solde : compte de trésorerie dans ce journal, depuis le début de l'exercice");
+            var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true, true);
+            Verif(reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) >= @debut") && reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du OR") && reqSolde.Contains("e.JO_Num = @jan")
+                  && !reqSolde.Contains("@journal") && !ServiceSaisie.RequeteSoldeAnterieur(false, false).Contains("@jan"),
+                  "ancien solde : compte de trésorerie tous journaux, depuis le début de l'exercice, à-nouveaux compris");
+            // Janvier 2026 dans le logiciel comptable : à-nouveau 10 800 D + 1 840 600 D − 1 506 905 C = 344 495 D.
+            var janvier = ServiceSaisie.Situation("571100", "Caisse", 10800m, new[]
+            {
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "571100", Debit = 1840600m },
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "571100", Credit = 1506905m }
+            });
+            Verif(janvier.AncienDebit == 10800m && janvier.NouveauDebit == 344495m && janvier.NouveauCredit == null,
+                  "trésorerie du premier mois : l'à-nouveau forme l'ancien solde");
             var relue = ServiceSaisie.InterpreterLigne(refS, lignesS[1].VersSaisie(), "", out err);
             Verif(relue != null && relue.Debit == 100000 && relue.CompteGeneral == "6052000" && relue.Libelle == "Facture SONABEL",
                   "ligne remise en saisie pour modification, relue à l'identique");

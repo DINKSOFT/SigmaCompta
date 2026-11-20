@@ -112,7 +112,7 @@
             <!-- Compte de trésorerie du journal : ancien solde, mouvements enregistrés, nouveau solde -->
             <Border Grid.Column="1" Style="{StaticResource PanneauTotaux}" Margin="10,0,0,0" MinWidth="440" VerticalAlignment="Top"
                     Visibility="{Binding ASituation, Converter={StaticResource BoolVisibilite}}"
-                    ToolTip="Ancien solde : écritures du compte dans ce journal, du début de l'exercice à la veille de la période. Mouvements : écritures enregistrées du compte dans ce journal pour la période.">
+                    ToolTip="Ancien solde : solde du compte, tous journaux, du début de l'exercice à la veille de la période, à-nouveaux compris. Mouvements : écritures enregistrées du compte dans ce journal pour la période.">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
