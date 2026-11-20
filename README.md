@@ -4,6 +4,7 @@ Application WPF (.NET 8) de comptabilité générale qui travaille directement s
 
 **Modules disponibles**
 
+- **Accueil** (écran de démarrage) : tous les modules en tuiles, regroupés par rubrique (gestion quotidienne, états comptables, dossier, import d'écritures, outils). Les tuiles restent grisées tant que le dossier nécessaire n'est pas ouvert ; un bandeau indique l'état de la connexion et propose l'action suivante (se connecter, choisir le dossier, saisir une pièce).
 - **Comptabilité › Saisie** : pièces tapées au clavier dans un journal et un mois (comptes et tiers reconnus à la frappe, montant d'équilibre proposé, contrôles en direct), enregistrées par `imp.PS_ImportPiece` avec numérotation automatique. Les écritures déjà enregistrées du mois s'affichent en dessous.
 - **Comptabilité › Consultation** : écritures d'un compte général ou tiers sur une période, report à nouveau, solde progressif, filtre lettré / non lettré, export Excel, extrait de compte en PDF ou à imprimer. Lecture seule.
 - **Comptabilité › États comptables** : balance générale ou des tiers (six colonnes, total par classe ou par type de tiers), grand livre général ou des tiers, journaux et journal centralisateur, export Excel, PDF et impression (A4 paysage, en-tête société, pagination). Lecture seule.

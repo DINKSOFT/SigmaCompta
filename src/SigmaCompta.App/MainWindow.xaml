@@ -27,6 +27,7 @@
         <DataTemplate DataType="{x:Type vm:ConsultationViewModel}"><v:ConsultationView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:EtatsViewModel}"><v:EtatsView/></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SaisieViewModel}"><v:SaisieView/></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AccueilViewModel}"><v:AccueilView/></DataTemplate>
 
         <!-- Entrée de la barre latérale (DataContext = EtapeViewModel) -->
         <Style x:Key="BoutonEtape" TargetType="Button">
@@ -223,7 +224,12 @@
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
                         <StackPanel>
-                            <TextBlock Text="DOSSIER" Style="{StaticResource TitreRubrique}" Margin="26,0,0,8"/>
+                            <Button Margin="12,0,12,6" Style="{StaticResource BoutonEtape}"
+                                    DataContext="{Binding EtapeAccueil}"
+                                    Command="{Binding DataContext.NaviguerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"/>
+
+                            <TextBlock Text="DOSSIER" Style="{StaticResource TitreRubrique}" Margin="26,4,0,8"/>
                             <ItemsControl ItemsSource="{Binding EtapesDossier}" ItemTemplate="{StaticResource ModeleEtape}" Margin="12,0"/>
 
                             <TextBlock Text="COMPTABILITÉ" Style="{StaticResource TitreRubrique}"/>

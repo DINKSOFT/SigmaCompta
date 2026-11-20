@@ -57,6 +57,7 @@ namespace SigmaCompta.App.ViewModels
             Consultation = new ConsultationViewModel(Session, this, dialogues);
             Etats = new EtatsViewModel(Session, this, dialogues);
             Saisie = new SaisieViewModel(Session, this, dialogues);
+            Accueil = new AccueilViewModel(Session, this, dialogues);
 
             Etapes = new ObservableCollection<EtapeViewModel>
             {
@@ -81,11 +82,14 @@ namespace SigmaCompta.App.ViewModels
                 new EtapeViewModel(11, "États comptables", "Balance, grand livre, journaux", "\uE8A5", Etats, false) { Rubrique = "Comptabilité" },
             };
 
+            EtapeAccueil = new EtapeViewModel(0, "Accueil", "Tous les modules", "\uE80F", Accueil, false) { Rubrique = "Sigma Compta" };
+            Accueil.Construire(this, Naviguer);
+
             NaviguerCommand = new Commande(p => Naviguer(p as EtapeViewModel), p => p is EtapeViewModel && ((EtapeViewModel)p).EstAccessible);
             FermerNotificationCommand = new Commande(() => NotificationVisible = false);
 
             ActualiserEtapes();
-            Naviguer(Etapes[0]);
+            Naviguer(EtapeAccueil);
         }
 
         public Session Session { get; private set; }
@@ -99,6 +103,7 @@ namespace SigmaCompta.App.ViewModels
         public ConsultationViewModel Consultation { get; private set; }
         public EtatsViewModel Etats { get; private set; }
         public SaisieViewModel Saisie { get; private set; }
+        public AccueilViewModel Accueil { get; private set; }
 
         /// <summary>Les six étapes historiques (connexion → import) : leurs index restent ceux d'origine.</summary>
         public ObservableCollection<EtapeViewModel> Etapes { get; private set; }
@@ -106,6 +111,7 @@ namespace SigmaCompta.App.ViewModels
         public ObservableCollection<EtapeViewModel> EtapesImport { get; private set; }
         public ObservableCollection<EtapeViewModel> Modules { get; private set; }
         public EtapeViewModel EtapeHistorique { get; private set; }
+        public EtapeViewModel EtapeAccueil { get; private set; }
 
         public Commande NaviguerCommand { get; private set; }
         public Commande FermerNotificationCommand { get; private set; }
@@ -124,6 +130,7 @@ namespace SigmaCompta.App.ViewModels
             foreach (var e in Etapes) e.EstActive = e == etape;
             foreach (var m in Modules) m.EstActive = m == etape;
             EtapeHistorique.EstActive = etape == EtapeHistorique;
+            EtapeAccueil.EstActive = etape == EtapeAccueil;
             EtapeCourante = etape;
             PageCourante = etape.Page;
             try
@@ -138,7 +145,7 @@ namespace SigmaCompta.App.ViewModels
 
         public void AllerA(int numeroEtape)
         {
-            var e = Etapes.Concat(Modules).Concat(new[] { EtapeHistorique }).FirstOrDefault(x => x.Numero == numeroEtape);
+            var e = Etapes.Concat(Modules).Concat(new[] { EtapeHistorique, EtapeAccueil }).FirstOrDefault(x => x.Numero == numeroEtape);
             ActualiserEtapes();
             if (e != null) Naviguer(e);
         }
