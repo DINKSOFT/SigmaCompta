@@ -13,6 +13,12 @@ namespace SigmaCompta.Core.Sql
 {
     public static class SqlOutils
     {
+        /// <summary>
+        /// Date comptable d'une écriture de F_ECRITUREC (alias <c>e</c>) : période (JM_Date, 1er du mois) + jour (EC_Jour).
+        /// EC_Date est la date de saisie dans le logiciel comptable : elle ne sert ni aux filtres ni aux tris.
+        /// </summary>
+        public const string DateEcriture = "DATEADD(day, e.EC_Jour - 1, e.JM_Date)";
+
         /// <summary>Équivalent C# de QUOTENAME().</summary>
         public static string Crochets(string nom)
         {

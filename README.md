@@ -34,7 +34,7 @@ Deux paquets NuGet seulement : `Microsoft.Data.SqlClient` (accès SQL Server) et
 2. Vérifier que **SigmaCompta.App** est le projet de démarrage (il l'est par défaut), puis lancer avec F5.
 3. Pour diffuser l'application, générer en `Release` et copier le dossier `src\SigmaCompta.App\bin\Release\net8.0-windows\`. Le poste doit avoir le **runtime .NET 8 Desktop**. Pour s'en passer, publier en mode autonome : `dotnet publish src\SigmaCompta.App -c Release -r win-x64 --self-contained`.
 
-Le projet **SigmaCompta.Tests** est une console qui exécute 152 contrôles du cœur métier, sans SQL Server. Un code de sortie 0 signifie que tous les contrôles passent.
+Le projet **SigmaCompta.Tests** est une console qui exécute 153 contrôles du cœur métier, sans SQL Server. Un code de sortie 0 signifie que tous les contrôles passent.
 
 ## 2. Parcours dans l'application
 

@@ -378,8 +378,8 @@ namespace SigmaCompta.Core.Comptabilite
             return "SELECT SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS Debit, " +
                    "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS Credit " +
                    "FROM dbo.F_ECRITUREC e WHERE e.CG_Num = @compte AND e.JO_Num = @journal" +
-                   (avecDebut ? " AND e.EC_Date >= @debut" : "") +
-                   " AND e.EC_Date < @du";
+                   (avecDebut ? " AND " + SqlOutils.DateEcriture + " >= @debut" : "") +
+                   " AND " + SqlOutils.DateEcriture + " < @du";
         }
 
         /// <summary>Solde (débit − crédit) du compte de trésorerie <paramref name="compte"/> dans le journal, au début de la période.</summary>

@@ -404,13 +404,25 @@ namespace SigmaCompta.Tests
                   "période : un seul exercice pour la balance, ouverture depuis le début d'exercice");
 
             var sqlB = ServiceEtats.RequeteBalance(NatureCompte.Tiers, new PlageComptes("C", "F"), true);
-            Verif(sqlB.Contains("e.CT_Num >= @de") && sqlB.Contains("LEFT(e.CT_Num, LEN(@a)) <= @a") && sqlB.Contains("NOT (e.EC_Date < @du OR e.JO_Num = @jan)")
+            Verif(sqlB.Contains("e.CT_Num >= @de") && sqlB.Contains("LEFT(e.CT_Num, LEN(@a)) <= @a") && sqlB.Contains("NOT (DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du OR e.JO_Num = @jan)")
                   && sqlB.Contains("GROUP BY e.CT_Num"), "requête balance : tiers, plage et à-nouveaux");
             var sqlG = ServiceEtats.RequeteLignesGrandLivre(NatureCompte.General, new PlageComptes("", ""), true, false);
             Verif(sqlG.Contains("e.JO_Num <> @jan") && !sqlG.Contains("@de") && sqlG.Contains("CAST(NULL AS varchar(3)) AS EC_Lettrage")
                   && sqlG.Contains("ORDER BY e.CG_Num"), "requête grand livre : à-nouveaux hors des lignes");
             Verif(ServiceEtats.RequeteJournal(true).Contains("e.JO_Num = @journal") && !ServiceEtats.RequeteCentralisateur(false).Contains("@journal")
-                  && ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.General, new PlageComptes("", ""), false).Contains("(e.EC_Date < @du)"), "requêtes journaux et ouvertures");
+                  && ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.General, new PlageComptes("", ""), false).Contains("(DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du)"), "requêtes journaux et ouvertures");
+
+            // Date comptable = période (JM_Date) + jour (EC_Jour) ; EC_Date est la date de saisie et ne sert jamais de filtre.
+            var requetesDates = new[]
+            {
+                sqlB, sqlG, ServiceEtats.RequeteJournal(true), ServiceEtats.RequeteCentralisateur(true),
+                ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.Tiers, new PlageComptes("", ""), true),
+                ServiceConsultation.RequeteLignes(NatureCompte.General, FiltreLettrage.Toutes, true, true), ServiceConsultation.RequeteReport(NatureCompte.Tiers),
+                ServiceSaisie.RequeteSoldeAnterieur(true)
+            };
+            Verif(requetesDates.All(q => !q.Contains("e.EC_Date")) && ServiceEtats.RequeteJournal(false).Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) AS EC_Date")
+                  && ServiceEtats.RequeteJournal(false).Contains("ORDER BY e.JO_Num, DATEADD(day, e.EC_Jour - 1, e.JM_Date), e.EC_Piece"),
+                  "requêtes sur la date comptable (JM_Date + EC_Jour), jamais sur la date de saisie");
 
             var xb = Path.Combine(dir, "balance.xlsx");
             ExportEtats.Ecrire(xb, rb);
@@ -530,7 +542,7 @@ namespace SigmaCompta.Tests
                   && sit.AncienCredit == 224054m && sit.AncienDebit == null && sit.NouveauCredit == 691902m && sit.NouveauDebit == null,
                   "trésorerie du journal : ancien solde, mouvements du compte, nouveau solde");
             var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true);
-            Verif(reqSolde.Contains("e.EC_Date >= @debut") && reqSolde.Contains("e.JO_Num = @journal") && reqSolde.Contains("e.EC_Date < @du")
+            Verif(reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) >= @debut") && reqSolde.Contains("e.JO_Num = @journal") && reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du")
                   && !ServiceSaisie.RequeteSoldeAnterieur(false).Contains("@debut"),
                   "ancien solde : compte de trésorerie dans ce journal, depuis le début de l'exercice");
             var relue = ServiceSaisie.InterpreterLigne(refS, lignesS[1].VersSaisie(), "", out err);
