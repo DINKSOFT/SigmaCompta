@@ -90,6 +90,23 @@ namespace SigmaCompta.Core.Modeles
         }
     }
 
+    /// <summary>Compte de trésorerie d'un journal : ancien solde, mouvements de la période, nouveau solde (positif = débiteur).</summary>
+    public sealed class SituationTresorerie
+    {
+        public string Compte { get; set; }
+        public string Intitule { get; set; }
+        public decimal AncienSolde { get; set; }
+        public decimal MouvementsDebit { get; set; }
+        public decimal MouvementsCredit { get; set; }
+        public decimal NouveauSolde { get { return AncienSolde + MouvementsDebit - MouvementsCredit; } }
+
+        // Affichage en deux colonnes Débit / Crédit, comme le logiciel comptable.
+        public decimal? AncienDebit { get { return AncienSolde > 0 ? AncienSolde : (decimal?)null; } }
+        public decimal? AncienCredit { get { return AncienSolde < 0 ? -AncienSolde : (decimal?)null; } }
+        public decimal? NouveauDebit { get { return NouveauSolde > 0 ? NouveauSolde : (decimal?)null; } }
+        public decimal? NouveauCredit { get { return NouveauSolde < 0 ? -NouveauSolde : (decimal?)null; } }
+    }
+
     /// <summary>Écritures déjà enregistrées dans le journal et la période (brouillard).</summary>
     public sealed class BrouillardPeriode
     {

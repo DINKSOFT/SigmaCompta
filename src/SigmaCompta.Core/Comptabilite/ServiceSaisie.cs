@@ -365,6 +365,70 @@ namespace SigmaCompta.Core.Comptabilite
             }, ct);
         }
 
+        // ================================================================ Compte de trésorerie du journal
+
+        /// <summary>
+        /// Solde du compte avant la période : écritures depuis le début de l'exercice (<c>@debut</c>, facultatif)
+        /// jusqu'à la veille de la période (<c>@du</c>), plus les à-nouveaux (<c>@jan</c>) datés dans la période,
+        /// qui ouvrent l'exercice le premier jour du premier mois. Paramètres : @compte, [@debut], @du, [@auExclu, @jan].
+        /// </summary>
+        public static string RequeteSoldeAnterieur(bool avecDebut, bool avecJournalANouveaux)
+        {
+            return "SELECT SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS Debit, " +
+                   "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS Credit " +
+                   "FROM dbo.F_ECRITUREC e WHERE e.CG_Num = @compte" +
+                   (avecDebut ? " AND e.EC_Date >= @debut" : "") +
+                   " AND (e.EC_Date < @du" + (avecJournalANouveaux ? " OR (e.EC_Date < @auExclu AND e.JO_Num = @jan)" : "") + ")";
+        }
+
+        /// <summary>Solde (débit − crédit) du compte de trésorerie <paramref name="compte"/> au début de la période.</summary>
+        public static async Task<decimal> LireSoldeAnterieurAsync(SqlConnection c, string compte, string journal, PeriodeSaisie periode,
+                                                                  Referentiel r, CancellationToken ct = default(CancellationToken))
+        {
+            var exo = r == null ? null : r.Exercices.Where(e => e.Contient(periode.Mois)).OrderByDescending(e => e.Debut).FirstOrDefault();
+            var jan = ServiceEtats.DetecterJournalANouveaux(r);
+            // Le journal saisi est lui-même celui des à-nouveaux : ses écritures de la période sont déjà les mouvements.
+            bool avecJan = jan != null && !string.Equals(jan, (journal ?? "").Trim(), StringComparison.OrdinalIgnoreCase);
+            using (var cmd = SqlOutils.Commande(c, RequeteSoldeAnterieur(exo != null, avecJan), 120))
+            {
+                cmd.Parameters.Add(new SqlParameter("@compte", SqlDbType.VarChar, 13) { Value = (compte ?? "").Trim() });
+                if (exo != null) cmd.Parameters.Add(new SqlParameter("@debut", SqlDbType.DateTime) { Value = exo.Debut.Date });
+                cmd.Parameters.Add(new SqlParameter("@du", SqlDbType.DateTime) { Value = periode.Mois });
+                if (avecJan)
+                {
+                    cmd.Parameters.Add(new SqlParameter("@auExclu", SqlDbType.DateTime) { Value = periode.Mois.AddMonths(1) });
+                    cmd.Parameters.Add(new SqlParameter("@jan", SqlDbType.VarChar, 13) { Value = jan });
+                }
+                using (var rd = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
+                {
+                    if (!await rd.ReadAsync(ct).ConfigureAwait(false)) return 0m;
+                    return MontantSql(rd["Debit"]) - MontantSql(rd["Credit"]);
+                }
+            }
+        }
+
+        private static decimal MontantSql(object o)
+        {
+            return o == null || o == DBNull.Value ? 0m : Convert.ToDecimal(o, CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Situation du compte de trésorerie affichée en tête de la saisie : solde avant la période,
+        /// mouvements du compte dans le journal (écritures enregistrées) et nouveau solde.
+        /// </summary>
+        public static SituationTresorerie Situation(string compte, string intitule, decimal ancienSolde, IEnumerable<LigneEtat> brouillard)
+        {
+            var cle = (compte ?? "").Trim();
+            var s = new SituationTresorerie { Compte = cle, Intitule = intitule ?? "", AncienSolde = ancienSolde };
+            foreach (var l in brouillard ?? Enumerable.Empty<LigneEtat>())
+            {
+                if (l.Genre != GenreLigne.Detail || !string.Equals((l.Compte ?? "").Trim(), cle, StringComparison.OrdinalIgnoreCase)) continue;
+                s.MouvementsDebit += l.Debit ?? 0m;
+                s.MouvementsCredit += l.Credit ?? 0m;
+            }
+            return s;
+        }
+
         /// <summary>Lignes du brouillard à afficher, avec un total en fin de liste.</summary>
         public static BrouillardPeriode Brouillard(IEnumerable<EcritureEtat> ecritures)
         {

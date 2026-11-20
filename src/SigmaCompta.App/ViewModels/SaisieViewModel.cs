@@ -39,10 +39,28 @@ namespace SigmaCompta.App.ViewModels
             ActualiserCommand = new CommandeAsync(ActualiserAsync, () => _journal != null && _periode != null);
             UtiliserSuggestionCommand = new Commande(p => UtiliserSuggestion(p as ElementCompte), p => p is ElementCompte);
             VerificationCommand = new Commande(() => Navigation.AllerA(3));
+            EquilibrerCommand = new Commande(Equilibrer, () => _referentiel != null && ServiceSaisie.Ecart(LignesHorsModification) != 0);
         }
 
-        public override string Titre { get { return "Saisie des écritures"; } }
-        public override string SousTitre { get { return "Pièces saisies au clavier dans un journal et un mois, contrôlées puis enregistrées dans la base comptable."; } }
+        /// <summary>« Journal : CAISSE / Juillet 2026 », comme le titre de la fenêtre de saisie du logiciel comptable.</summary>
+        public override string Titre
+        {
+            get
+            {
+                if (_journal == null || _periode == null) return "Saisie des écritures";
+                return "Journal : " + _journal.Code + " / " + _periode.Libelle;
+            }
+        }
+
+        public override string SousTitre
+        {
+            get
+            {
+                if (_journal == null) return "Pièces saisies au clavier dans un journal et un mois, contrôlées puis enregistrées dans la base comptable.";
+                var intitule = string.IsNullOrWhiteSpace(_journal.Intitule) ? "" : _journal.Intitule.Trim() + " · ";
+                return intitule + InfoJournal;
+            }
+        }
 
         public Commande ValiderLigneCommand { get; private set; }
         public Commande AnnulerLigneCommand { get; private set; }
@@ -54,6 +72,7 @@ namespace SigmaCompta.App.ViewModels
         public CommandeAsync ActualiserCommand { get; private set; }
         public Commande UtiliserSuggestionCommand { get; private set; }
         public Commande VerificationCommand { get; private set; }
+        public Commande EquilibrerCommand { get; private set; }
 
         // ---------------------------------------------------------------- Chargement
 
@@ -121,7 +140,7 @@ namespace SigmaCompta.App.ViewModels
 
         private void ContexteModifie()
         {
-            NotifierPlusieurs("InfoJournal", "PeriodeCloturee", "MessageCloture", "TitreBrouillard", "DebutPeriode", "FinPeriode");
+            NotifierPlusieurs("InfoJournal", "PeriodeCloturee", "MessageCloture", "TitreBrouillard", "DebutPeriode", "FinPeriode", "Titre", "SousTitre");
             Revalider();
             Lancer(ActualiserAsync);
         }
@@ -164,13 +183,13 @@ namespace SigmaCompta.App.ViewModels
         // ---------------------------------------------------------------- En-tête de la pièce
 
         private string _jour = "";
-        public string JourTexte { get { return _jour; } set { if (Set(ref _jour, value ?? "")) Revalider(); } }
+        public string JourTexte { get { return _jour; } set { if (Set(ref _jour, value ?? "")) { Revalider(); ActualiserEnteteGrille(); } } }
 
         private string _piece = "";
-        public string PieceTexte { get { return _piece; } set { if (Set(ref _piece, value ?? "")) Revalider(); } }
+        public string PieceTexte { get { return _piece; } set { if (Set(ref _piece, value ?? "")) { Revalider(); ActualiserEnteteGrille(); } } }
 
         private string _refPiece = "";
-        public string RefPieceTexte { get { return _refPiece; } set { if (Set(ref _refPiece, value ?? "")) Revalider(); } }
+        public string RefPieceTexte { get { return _refPiece; } set { if (Set(ref _refPiece, value ?? "")) { Revalider(); ActualiserEnteteGrille(); } } }
 
         private string _libellePiece = "";
         /// <summary>Libellé proposé pour les lignes (repris sur la ligne de saisie s'il est vide).</summary>
@@ -205,6 +224,7 @@ namespace SigmaCompta.App.ViewModels
             _refPiece = "";
             _libellePiece = "";
             NotifierPlusieurs("JourTexte", "PieceTexte", "RefPieceTexte", "LibellePiece", "ApercuDate");
+            ActualiserEnteteGrille();
         }
 
         // ---------------------------------------------------------------- Ligne de saisie
@@ -293,6 +313,21 @@ namespace SigmaCompta.App.ViewModels
             _credit = c == 0 ? "" : c.ToString("0.##", CultureInfo.CurrentCulture);
             NotifierPlusieurs("DebitTexte", "CreditTexte");
             ProposerSuggestions(NatureCompte.General, "");
+        }
+
+        /// <summary>Lignes prises en compte pour l'équilibre (sans celle remise en saisie pour modification).</summary>
+        private IEnumerable<LigneSaisie> LignesHorsModification
+        {
+            get { return _lignes.Where(l => !ReferenceEquals(l, _ligneEnModification)); }
+        }
+
+        /// <summary>Bouton « Équilibrer » : la ligne en saisie reçoit le montant qui équilibre la pièce.</summary>
+        private void Equilibrer()
+        {
+            decimal d, c;
+            ServiceSaisie.SoldeAProposer(LignesHorsModification, out d, out c);
+            DebitTexte = d == 0 ? "" : d.ToString("0.##", CultureInfo.CurrentCulture);
+            CreditTexte = c == 0 ? "" : c.ToString("0.##", CultureInfo.CurrentCulture);
         }
 
         private void ValiderLigne()
@@ -391,6 +426,7 @@ namespace SigmaCompta.App.ViewModels
             _lignes = new ObservableCollection<LigneSaisie>(liste);
             _ligneSelectionnee = null;
             NotifierPlusieurs("Lignes", "LigneSelectionnee", "TotalDebit", "TotalCredit", "EcartLibelle", "EstEquilibree", "AucuneLigne");
+            RebatirGrille();
             Revalider();
         }
 
@@ -398,6 +434,10 @@ namespace SigmaCompta.App.ViewModels
         public decimal TotalDebit { get { return _lignes.Sum(l => l.Debit); } }
         public decimal TotalCredit { get { return _lignes.Sum(l => l.Credit); } }
         public bool EstEquilibree { get { return _lignes.Count > 0 && ServiceSaisie.Ecart(_lignes) == 0; } }
+
+        /// <summary>Montant qui manque pour équilibrer la pièce, dans la colonne où il faut le saisir.</summary>
+        public decimal? SoldeAEquilibrerDebit { get { var e = ServiceSaisie.Ecart(_lignes); return e < 0 ? -e : (decimal?)null; } }
+        public decimal? SoldeAEquilibrerCredit { get { var e = ServiceSaisie.Ecart(_lignes); return e > 0 ? e : (decimal?)null; } }
 
         public string EcartLibelle
         {
@@ -549,7 +589,10 @@ namespace SigmaCompta.App.ViewModels
         // ---------------------------------------------------------------- Brouillard de la période
 
         private IList<LigneEtat> _brouillard = new List<LigneEtat>();
+        /// <summary>Écritures déjà enregistrées dans le journal et le mois (sans ligne de total).</summary>
         public IList<LigneEtat> LignesBrouillard { get { return _brouillard; } private set { Set(ref _brouillard, value); } }
+
+        private decimal _brouillardDebit, _brouillardCredit;
 
         private string _resumeBrouillard = "";
         public string ResumeBrouillard { get { return _resumeBrouillard; } private set { Set(ref _resumeBrouillard, value); } }
@@ -563,6 +606,15 @@ namespace SigmaCompta.App.ViewModels
             }
         }
 
+        private SituationTresorerie _situation;
+        /// <summary>Compte de trésorerie du journal (null si le journal n'en a pas) : ancien solde, mouvements, nouveau solde.</summary>
+        public SituationTresorerie Situation
+        {
+            get { return _situation; }
+            private set { if (Set(ref _situation, value)) Notifier("ASituation"); }
+        }
+        public bool ASituation { get { return _situation != null; } }
+
         private async Task ActualiserAsync()
         {
             if (!Session.BaseChoisie || _journal == null || _periode == null) return;
@@ -575,15 +627,109 @@ namespace SigmaCompta.App.ViewModels
             if (_journal == null || _periode == null)
             {
                 LignesBrouillard = new List<LigneEtat>();
+                _brouillardDebit = _brouillardCredit = 0m;
                 ResumeBrouillard = "";
+                Situation = null;
+                RebatirGrille();
                 return;
             }
             var b = ServiceSaisie.Brouillard(await ServiceSaisie.LireBrouillardAsync(c, _journal.Code, _periode));
-            LignesBrouillard = b.Lignes;
+            LignesBrouillard = b.Lignes.Where(l => l.Genre == GenreLigne.Detail).ToList();
+            _brouillardDebit = b.TotalDebit;
+            _brouillardCredit = b.TotalCredit;
             ResumeBrouillard = b.NombreEcritures == 0
                 ? "Aucune écriture dans ce journal pour ce mois."
-                : b.NombrePieces.ToString("N0") + " pièce(s) · " + b.NombreEcritures.ToString("N0") + " écriture(s) · débit " +
-                  b.TotalDebit.ToString("#,##0.##") + " · crédit " + b.TotalCredit.ToString("#,##0.##");
+                : b.NombrePieces.ToString("N0") + " pièce(s) · " + b.NombreEcritures.ToString("N0") + " écriture(s) enregistrée(s)";
+
+            var compte = (_journal.CompteTresorerie ?? "").Trim();
+            if (compte.Length == 0) Situation = null;
+            else
+            {
+                var ancien = await ServiceSaisie.LireSoldeAnterieurAsync(c, compte, _journal.Code, _periode, _referentiel);
+                CompteGeneral cg;
+                var intitule = _referentiel != null && _referentiel.Comptes.TryGetValue(compte, out cg) ? cg.Intitule : "";
+                Situation = ServiceSaisie.Situation(compte, intitule, ancien, LignesBrouillard);
+            }
+            RebatirGrille();
         }
+
+        // ---------------------------------------------------------------- Grille du journal (enregistré + pièce en cours)
+
+        private ObservableCollection<LigneGrille> _grille = new ObservableCollection<LigneGrille>();
+        /// <summary>Écritures du journal pour le mois, suivies des lignes de la pièce en cours de saisie.</summary>
+        public ObservableCollection<LigneGrille> LignesGrille { get { return _grille; } }
+
+        private LigneGrille _ligneGrille;
+        public LigneGrille LigneGrilleSelectionnee
+        {
+            get { return _ligneGrille; }
+            set
+            {
+                if (!Set(ref _ligneGrille, value)) return;
+                // Seules les lignes de la pièce en cours se modifient ou se suppriment ici.
+                LigneSelectionnee = value != null && value.EnCours ? value.Ligne : null;
+            }
+        }
+
+        public int NombreElements { get { return _grille.Count; } }
+        public decimal TotalJournalDebit { get { return _brouillardDebit + TotalDebit; } }
+        public decimal TotalJournalCredit { get { return _brouillardCredit + TotalCredit; } }
+
+        private void RebatirGrille()
+        {
+            var liste = new List<LigneGrille>();
+            foreach (var l in _brouillard)
+                liste.Add(new LigneGrille
+                {
+                    Jour = l.Date.HasValue ? l.Date.Value.Day.ToString(CultureInfo.CurrentCulture) : "",
+                    Piece = l.Piece, Facture = l.RefPiece, Compte = l.Compte, Tiers = l.CompteTiers, Libelle = l.Libelle,
+                    Echeance = l.Echeance, Debit = l.Debit, Credit = l.Credit
+                });
+            foreach (var l in _lignes)
+                liste.Add(new LigneGrille
+                {
+                    EnCours = true, Ligne = l, Compte = l.CompteGeneral, Tiers = l.CompteTiers, Libelle = l.Libelle,
+                    Echeance = l.Echeance, Debit = l.DebitAffiche, Credit = l.CreditAffiche
+                });
+            _grille = new ObservableCollection<LigneGrille>(liste);
+            _ligneGrille = null;
+            ActualiserEnteteGrille();
+            NotifierPlusieurs("LignesGrille", "LigneGrilleSelectionnee", "NombreElements", "TotalJournalDebit", "TotalJournalCredit",
+                              "SoldeAEquilibrerDebit", "SoldeAEquilibrerCredit");
+        }
+
+        /// <summary>Jour, n° de pièce et n° de facture de l'en-tête, repris sur les lignes de la pièce en cours.</summary>
+        private void ActualiserEnteteGrille()
+        {
+            var d = DatePiece;
+            var jour = d.HasValue ? d.Value.Day.ToString(CultureInfo.CurrentCulture) : _jour.Trim();
+            var piece = string.IsNullOrWhiteSpace(_piece) ? "auto" : _piece.Trim();
+            foreach (var g in _grille.Where(x => x.EnCours))
+            {
+                g.Jour = jour;
+                g.Piece = piece;
+                g.Facture = _refPiece.Trim();
+            }
+        }
+    }
+
+    /// <summary>Ligne de la grille du journal : écriture enregistrée, ou ligne de la pièce en cours (<see cref="EnCours"/>).</summary>
+    public sealed class LigneGrille : ObservableObject
+    {
+        public bool EnCours { get; set; }
+        /// <summary>Ligne de la pièce en cours (null pour une écriture enregistrée).</summary>
+        public LigneSaisie Ligne { get; set; }
+
+        private string _jour, _piece, _facture;
+        public string Jour { get { return _jour; } set { Set(ref _jour, value); } }
+        public string Piece { get { return _piece; } set { Set(ref _piece, value); } }
+        public string Facture { get { return _facture; } set { Set(ref _facture, value); } }
+
+        public string Compte { get; set; }
+        public string Tiers { get; set; }
+        public string Libelle { get; set; }
+        public DateTime? Echeance { get; set; }
+        public decimal? Debit { get; set; }
+        public decimal? Credit { get; set; }
     }
 }
