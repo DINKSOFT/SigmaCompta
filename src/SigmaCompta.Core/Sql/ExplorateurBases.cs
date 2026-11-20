@@ -21,7 +21,7 @@ namespace SigmaCompta.Core.Sql
             new[] { "EC_No", "N° d'écriture (posé par le déclencheur)" },
             new[] { "JM_Date", "Période (1er du mois) → F_JMOUV" },
             new[] { "EC_Jour", "Jour du mois" },
-            new[] { "EC_Date", "Date de l'écriture" },
+            new[] { "EC_Date", "Date de saisie (la date comptable est JM_Date + EC_Jour)" },
             new[] { "EC_Piece", "N° de pièce" },
             new[] { "cbEC_Piece", "Clé binaire de la pièce" },
             new[] { "EC_RefPiece", "Référence pièce / n° facture" },

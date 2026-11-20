@@ -125,6 +125,8 @@ namespace SigmaCompta.Core.Modeles
         public string Journal { get; set; }
         public string Piece { get; set; }
         public string RefPiece { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference) ; lue par le brouillard de saisie.</summary>
+        public string Reference { get; set; }
         public DateTime? Echeance { get; set; }
         public string Lettrage { get; set; }
         public int? EcNo { get; set; }
@@ -191,6 +193,8 @@ namespace SigmaCompta.Core.Modeles
         public DateTime Date { get; set; }
         public string Piece { get; set; }
         public string RefPiece { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference), vide si la requête ne la lit pas.</summary>
+        public string Reference { get; set; }
         public string CompteGeneral { get; set; }
         public string CompteTiers { get; set; }
         public string Libelle { get; set; }

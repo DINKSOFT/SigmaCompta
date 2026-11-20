@@ -521,7 +521,7 @@ namespace SigmaCompta.Core.Comptabilite
         /// <summary>Une écriture va dans l'ouverture si elle précède la période ou appartient au journal des à-nouveaux.</summary>
         public static string ConditionOuverture(bool avecJournalANouveaux)
         {
-            return avecJournalANouveaux ? "(e.EC_Date < @du OR e.JO_Num = @jan)" : "(e.EC_Date < @du)";
+            return avecJournalANouveaux ? "(" + SqlOutils.DateEcriture + " < @du OR e.JO_Num = @jan)" : "(" + SqlOutils.DateEcriture + " < @du)";
         }
 
         /// <summary>Cumuls par compte, de @debut (début d'exercice) à la fin de la période. Paramètres : @debut, @du, @auExclu, [@jan], [@de], [@a].</summary>
@@ -534,7 +534,7 @@ namespace SigmaCompta.Core.Comptabilite
                    "SUM(CASE WHEN " + ouv + " AND e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS OuvCredit, " +
                    "SUM(CASE WHEN NOT " + ouv + " AND e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS MvtDebit, " +
                    "SUM(CASE WHEN NOT " + ouv + " AND e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS MvtCredit " +
-                   "FROM dbo.F_ECRITUREC e WHERE e.EC_Date >= @debut AND e.EC_Date < @auExclu AND " + ConditionComptes(nature, plage) +
+                   "FROM dbo.F_ECRITUREC e WHERE " + SqlOutils.DateEcriture + " >= @debut AND " + SqlOutils.DateEcriture + " < @auExclu AND " + ConditionComptes(nature, plage) +
                    " GROUP BY " + col;
         }
 
@@ -545,13 +545,14 @@ namespace SigmaCompta.Core.Comptabilite
             return "SELECT " + col + " AS Compte, " +
                    "SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS OuvDebit, " +
                    "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS OuvCredit " +
-                   "FROM dbo.F_ECRITUREC e WHERE e.EC_Date >= @debut AND e.EC_Date < @auExclu AND " + ConditionOuverture(avecJournalANouveaux) +
+                   "FROM dbo.F_ECRITUREC e WHERE " + SqlOutils.DateEcriture + " >= @debut AND " + SqlOutils.DateEcriture + " < @auExclu AND " + ConditionOuverture(avecJournalANouveaux) +
                    " AND " + ConditionComptes(nature, plage) + " GROUP BY " + col;
         }
 
-        private static string ColonnesEcriture(bool colonneLettrage)
+        private static string ColonnesEcriture(bool colonneLettrage, bool colonneReference = false)
         {
-            return "SELECT e.EC_No, e.JO_Num, e.EC_Date, e.EC_Piece, e.EC_RefPiece, e.CG_Num, e.CT_Num, e.EC_Intitule, " +
+            return "SELECT e.EC_No, e.JO_Num, " + SqlOutils.DateEcriture + " AS EC_Date, e.EC_Piece, e.EC_RefPiece, " +
+                   (colonneReference ? "e.EC_Reference, " : "") + "e.CG_Num, e.CT_Num, e.EC_Intitule, " +
                    "e.EC_Sens, e.EC_Montant, e.EC_Echeance, " +
                    (colonneLettrage ? "e.EC_Lettrage" : "CAST(NULL AS varchar(3)) AS EC_Lettrage") + " FROM dbo.F_ECRITUREC e ";
         }
@@ -561,27 +562,27 @@ namespace SigmaCompta.Core.Comptabilite
         {
             var col = Colonne(nature);
             return ColonnesEcriture(colonneLettrage) +
-                   "WHERE e.EC_Date >= @du AND e.EC_Date < @auExclu" + (avecJournalANouveaux ? " AND e.JO_Num <> @jan" : "") +
+                   "WHERE " + SqlOutils.DateEcriture + " >= @du AND " + SqlOutils.DateEcriture + " < @auExclu" + (avecJournalANouveaux ? " AND e.JO_Num <> @jan" : "") +
                    " AND " + ConditionComptes(nature, plage) +
-                   " ORDER BY " + col + ", e.EC_Date, e.JO_Num, e.EC_Piece, e.EC_No";
+                   " ORDER BY " + col + ", " + SqlOutils.DateEcriture + ", e.JO_Num, e.EC_Piece, e.EC_No";
         }
 
-        /// <summary>Écritures des journaux. Paramètres : @du, @auExclu, [@journal].</summary>
-        public static string RequeteJournal(bool unJournal)
+        /// <summary>Écritures des journaux. Paramètres : @du, @auExclu, [@journal]. <paramref name="colonneReference"/> : lit aussi EC_Reference.</summary>
+        public static string RequeteJournal(bool unJournal, bool colonneReference = false)
         {
-            return ColonnesEcriture(false) +
-                   "WHERE e.EC_Date >= @du AND e.EC_Date < @auExclu" + (unJournal ? " AND e.JO_Num = @journal" : "") +
-                   " ORDER BY e.JO_Num, e.EC_Date, e.EC_Piece, e.EC_No";
+            return ColonnesEcriture(false, colonneReference) +
+                   "WHERE " + SqlOutils.DateEcriture + " >= @du AND " + SqlOutils.DateEcriture + " < @auExclu" + (unJournal ? " AND e.JO_Num = @journal" : "") +
+                   " ORDER BY e.JO_Num, " + SqlOutils.DateEcriture + ", e.EC_Piece, e.EC_No";
         }
 
         /// <summary>Totaux par journal et par mois. Paramètres : @du, @auExclu, [@journal].</summary>
         public static string RequeteCentralisateur(bool unJournal)
         {
-            return "SELECT e.JO_Num, YEAR(e.EC_Date) AS Annee, MONTH(e.EC_Date) AS Mois, " +
+            return "SELECT e.JO_Num, YEAR(" + SqlOutils.DateEcriture + ") AS Annee, MONTH(" + SqlOutils.DateEcriture + ") AS Mois, " +
                    "SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS Debit, " +
                    "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS Credit, COUNT(*) AS Nombre " +
-                   "FROM dbo.F_ECRITUREC e WHERE e.EC_Date >= @du AND e.EC_Date < @auExclu" + (unJournal ? " AND e.JO_Num = @journal" : "") +
-                   " GROUP BY e.JO_Num, YEAR(e.EC_Date), MONTH(e.EC_Date)";
+                   "FROM dbo.F_ECRITUREC e WHERE " + SqlOutils.DateEcriture + " >= @du AND " + SqlOutils.DateEcriture + " < @auExclu" + (unJournal ? " AND e.JO_Num = @journal" : "") +
+                   " GROUP BY e.JO_Num, YEAR(" + SqlOutils.DateEcriture + "), MONTH(" + SqlOutils.DateEcriture + ")";
         }
 
         // ================================================================ Exécution
@@ -685,6 +686,9 @@ namespace SigmaCompta.Core.Comptabilite
                 parametres(cmd);
                 using (var rd = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false))
                 {
+                    int iReference = -1;
+                    for (int k = 0; k < rd.FieldCount; k++)
+                        if (string.Equals(rd.GetName(k), "EC_Reference", StringComparison.OrdinalIgnoreCase)) iReference = k;
                     while (await rd.ReadAsync(ct).ConfigureAwait(false))
                     {
                         bool credit = SqlOutils.Entier(rd["EC_Sens"]) == 1;
@@ -696,6 +700,7 @@ namespace SigmaCompta.Core.Comptabilite
                             Date = SqlOutils.Date(rd["EC_Date"]) ?? DateTime.MinValue,
                             Piece = (SqlOutils.Texte(rd["EC_Piece"]) ?? "").Trim(),
                             RefPiece = (SqlOutils.Texte(rd["EC_RefPiece"]) ?? "").Trim(),
+                            Reference = iReference < 0 ? "" : (SqlOutils.Texte(rd.GetValue(iReference)) ?? "").Trim(),
                             CompteGeneral = (SqlOutils.Texte(rd["CG_Num"]) ?? "").Trim(),
                             CompteTiers = (SqlOutils.Texte(rd["CT_Num"]) ?? "").Trim(),
                             Libelle = (SqlOutils.Texte(rd["EC_Intitule"]) ?? "").Trim(),

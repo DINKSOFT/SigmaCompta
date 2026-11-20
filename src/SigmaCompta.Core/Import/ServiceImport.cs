@@ -171,6 +171,7 @@ namespace SigmaCompta.Core.Import
             dt.Columns.Add("Credit", typeof(decimal));
             dt.Columns.Add("EC_Echeance", typeof(DateTime));
             dt.Columns.Add("EC_RefPiece", typeof(string));
+            dt.Columns.Add("EC_Reference", typeof(string));
             foreach (var l in piece.Lignes)
             {
                 dt.Rows.Add(
@@ -181,7 +182,8 @@ namespace SigmaCompta.Core.Import
                     l.Debit,
                     l.Credit,
                     l.Echeance.HasValue ? (object)l.Echeance.Value.Date : DBNull.Value,
-                    string.IsNullOrWhiteSpace(l.RefPiece) ? (object)DBNull.Value : l.RefPiece);
+                    string.IsNullOrWhiteSpace(l.RefPiece) ? (object)DBNull.Value : l.RefPiece,
+                    string.IsNullOrWhiteSpace(l.Reference) ? (object)DBNull.Value : l.Reference.Trim());
             }
             return dt;
         }

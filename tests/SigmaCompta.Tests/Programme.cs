@@ -164,7 +164,8 @@ namespace SigmaCompta.Tests
 
             Console.WriteLine("== TVP");
             var dt = ServiceImport.ConstruireLignes(bq06);
-            Verif(dt.Columns.Count == 8 && dt.Columns[0].ColumnName == "NumLigne" && dt.Columns[7].ColumnName == "EC_RefPiece", "colonnes TVP dans l'ordre du type");
+            Verif(dt.Columns.Count == 9 && dt.Columns[0].ColumnName == "NumLigne" && dt.Columns[7].ColumnName == "EC_RefPiece"
+                  && dt.Columns[8].ColumnName == "EC_Reference", "colonnes TVP dans l'ordre du type");
             Verif(dt.Rows[0]["CT_Num"] == DBNull.Value && (string)dt.Rows[1]["CT_Num"] == "C100003", "tiers NULL / renseigné");
 
             Console.WriteLine("== Profils JSON");
@@ -207,7 +208,11 @@ namespace SigmaCompta.Tests
             var lots02 = ExecuteurScript.DecouperLots(ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure));
             Verif(lots02.Count == 6 && lots02[5].StartsWith("CREATE PROCEDURE"), "script 02 : 6 lots, le dernier crée la procédure : " + lots02.Count);
             Verif(!lots02.Any(x => x.Contains("GRANT EXECUTE ON TYPE") && !x.Contains("CREATE PROCEDURE")), "commentaire final (GRANT) non exécuté seul");
-            Verif(ScriptsEmbarques.VersionProcedureEmbarquee == "1.3", "version embarquée 1.3");
+            Verif(ScriptsEmbarques.VersionProcedureEmbarquee == "1.4", "version embarquée 1.4");
+            var scriptProc = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
+            Verif(scriptProc.Contains("EC_Reference varchar(17)    NULL") && scriptProc.Contains("--#SI:F_ECRITUREC.EC_Reference")
+                  && !InstallateurProcedure.AdapterScript(scriptProc, new HashSet<string>()).Script.Contains("l.EC_Reference                                --"),
+                  "procédure 1.4 : référence de ligne (EC_Reference), retirée si la base n'a pas la colonne");
             var p02 = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
             Verif(p02.Contains("@RenumeroterDoublon bit         = 1") && p02.IndexOf("IF @Piece LIKE '%[0-9]' SET @Modele = @Piece;", StringComparison.Ordinal) > 0,
                   "procédure : renumérotation d'un n° déjà utilisé (par défaut)");
@@ -216,7 +221,7 @@ namespace SigmaCompta.Tests
 
             Console.WriteLine("== Adaptation de la procédure (clés cb* calculées)");
             var proc = ScriptsEmbarques.Lire(ScriptsEmbarques.Procedure);
-            var toutesCles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "F_ECRITUREC.cbJO_Num", "F_ECRITUREC.cbEC_Piece", "F_ECRITUREC.cbEC_RefPiece", "F_ECRITUREC.cbCG_Num", "F_ECRITUREC.cbCT_Num", "F_JMOUV.cbJO_Num", "F_ECRITUREC.cbHash" };
+            var toutesCles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "F_ECRITUREC.cbJO_Num", "F_ECRITUREC.cbEC_Piece", "F_ECRITUREC.cbEC_RefPiece", "F_ECRITUREC.cbCG_Num", "F_ECRITUREC.cbCT_Num", "F_JMOUV.cbJO_Num", "F_ECRITUREC.cbHash", "F_ECRITUREC.EC_Reference" };
             var ancienne = InstallateurProcedure.AdapterScript(proc, toutesCles);
             Verif(ancienne.ColonnesRetirees.Count == 0 && ancienne.Script.Contains("cbCT_Num") && ancienne.Script.Contains("e.cbHash IS NOT NULL"), "colonnes cb* à remplir : tout est conservé");
             var existantes = new HashSet<string>(toutesCles, StringComparer.OrdinalIgnoreCase);
@@ -404,13 +409,25 @@ namespace SigmaCompta.Tests
                   "période : un seul exercice pour la balance, ouverture depuis le début d'exercice");
 
             var sqlB = ServiceEtats.RequeteBalance(NatureCompte.Tiers, new PlageComptes("C", "F"), true);
-            Verif(sqlB.Contains("e.CT_Num >= @de") && sqlB.Contains("LEFT(e.CT_Num, LEN(@a)) <= @a") && sqlB.Contains("NOT (e.EC_Date < @du OR e.JO_Num = @jan)")
+            Verif(sqlB.Contains("e.CT_Num >= @de") && sqlB.Contains("LEFT(e.CT_Num, LEN(@a)) <= @a") && sqlB.Contains("NOT (DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du OR e.JO_Num = @jan)")
                   && sqlB.Contains("GROUP BY e.CT_Num"), "requête balance : tiers, plage et à-nouveaux");
             var sqlG = ServiceEtats.RequeteLignesGrandLivre(NatureCompte.General, new PlageComptes("", ""), true, false);
             Verif(sqlG.Contains("e.JO_Num <> @jan") && !sqlG.Contains("@de") && sqlG.Contains("CAST(NULL AS varchar(3)) AS EC_Lettrage")
                   && sqlG.Contains("ORDER BY e.CG_Num"), "requête grand livre : à-nouveaux hors des lignes");
             Verif(ServiceEtats.RequeteJournal(true).Contains("e.JO_Num = @journal") && !ServiceEtats.RequeteCentralisateur(false).Contains("@journal")
-                  && ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.General, new PlageComptes("", ""), false).Contains("(e.EC_Date < @du)"), "requêtes journaux et ouvertures");
+                  && ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.General, new PlageComptes("", ""), false).Contains("(DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du)"), "requêtes journaux et ouvertures");
+
+            // Date comptable = période (JM_Date) + jour (EC_Jour) ; EC_Date est la date de saisie et ne sert jamais de filtre.
+            var requetesDates = new[]
+            {
+                sqlB, sqlG, ServiceEtats.RequeteJournal(true), ServiceEtats.RequeteCentralisateur(true),
+                ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.Tiers, new PlageComptes("", ""), true),
+                ServiceConsultation.RequeteLignes(NatureCompte.General, FiltreLettrage.Toutes, true, true), ServiceConsultation.RequeteReport(NatureCompte.Tiers),
+                ServiceSaisie.RequeteSoldeAnterieur(true, true)
+            };
+            Verif(requetesDates.All(q => !q.Contains("e.EC_Date")) && ServiceEtats.RequeteJournal(false).Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) AS EC_Date")
+                  && ServiceEtats.RequeteJournal(false).Contains("ORDER BY e.JO_Num, DATEADD(day, e.EC_Jour - 1, e.JM_Date), e.EC_Piece"),
+                  "requêtes sur la date comptable (JM_Date + EC_Jour), jamais sur la date de saisie");
 
             var xb = Path.Combine(dir, "balance.xlsx");
             ExportEtats.Ecrire(xb, rb);
@@ -493,6 +510,12 @@ namespace SigmaCompta.Tests
             var dtS = ServiceImport.ConstruireLignes(pS);
             Verif(dtS.Rows.Count == 3 && (string)dtS.Rows[0]["CT_Num"] == "F100003" && dtS.Rows[1]["CT_Num"] == DBNull.Value
                   && (decimal)dtS.Rows[1]["Debit"] == 100000, "lignes transmises à la procédure");
+            var avecRef = ServiceSaisie.InterpreterLigne(refS, new SaisieLigne { Compte = "6052", Reference = " 070139 ", Debit = "5" }, "", out err);
+            var pRef = ServiceSaisie.Construire(new EntetePiece { Journal = "ACH", Date = ServiceSaisie.Date(oct, "17") }, new List<LigneSaisie> { avecRef });
+            Verif(avecRef != null && avecRef.Reference == "070139" && avecRef.VersSaisie().Reference == "070139"
+                  && (string)ServiceImport.ConstruireLignes(pRef).Rows[0]["EC_Reference"] == "070139"
+                  && ServiceSaisie.InterpreterLigne(refS, new SaisieLigne { Compte = "6052", Reference = new string('9', 18), Debit = "5" }, "", out err) == null
+                  && err.StartsWith("Référence trop longue"), "référence de ligne saisie, transmise à la procédure, limitée à 17 caractères");
 
             var anKo = ServiceSaisie.Controler(ServiceSaisie.Construire(new EntetePiece { Journal = "ACH", Date = new DateTime(2025, 12, 5) },
                                                                         new List<LigneSaisie> { lignesS[1] }), refS, oct);
@@ -518,6 +541,29 @@ namespace SigmaCompta.Tests
             });
             Verif(br.Lignes.Count == 4 && br.Lignes[3].Genre == GenreLigne.TotalGeneral && br.TotalDebit == 60 && br.TotalCredit == 50
                   && br.NombrePieces == 2 && br.Lignes[1].Debit == null, "brouillard de la période et son total");
+            var sit = ServiceSaisie.Situation("5711000", "Caisse", -224054m, new[]
+            {
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "5711000", Debit = 1755300m },
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "5711000 ", Credit = 2223148m },
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "4211010", Debit = 70000m },
+                new LigneEtat { Genre = GenreLigne.TotalGeneral, Compte = "5711000", Debit = 9m }
+            });
+            // Chiffres de la fenêtre Journal du logiciel comptable : 224 054 C + 1 755 300 D − 2 223 148 C = 691 902 C.
+            Verif(sit.MouvementsDebit == 1755300m && sit.MouvementsCredit == 2223148m && sit.NouveauSolde == -691902m
+                  && sit.AncienCredit == 224054m && sit.AncienDebit == null && sit.NouveauCredit == 691902m && sit.NouveauDebit == null,
+                  "trésorerie du journal : ancien solde, mouvements du compte, nouveau solde");
+            var reqSolde = ServiceSaisie.RequeteSoldeAnterieur(true, true);
+            Verif(reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) >= @debut") && reqSolde.Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) < @du OR") && reqSolde.Contains("e.JO_Num = @jan")
+                  && !reqSolde.Contains("@journal") && !ServiceSaisie.RequeteSoldeAnterieur(false, false).Contains("@jan"),
+                  "ancien solde : compte de trésorerie tous journaux, depuis le début de l'exercice, à-nouveaux compris");
+            // Janvier 2026 dans le logiciel comptable : à-nouveau 10 800 D + 1 840 600 D − 1 506 905 C = 344 495 D.
+            var janvier = ServiceSaisie.Situation("571100", "Caisse", 10800m, new[]
+            {
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "571100", Debit = 1840600m },
+                new LigneEtat { Genre = GenreLigne.Detail, Compte = "571100", Credit = 1506905m }
+            });
+            Verif(janvier.AncienDebit == 10800m && janvier.NouveauDebit == 344495m && janvier.NouveauCredit == null,
+                  "trésorerie du premier mois : l'à-nouveau forme l'ancien solde");
             var relue = ServiceSaisie.InterpreterLigne(refS, lignesS[1].VersSaisie(), "", out err);
             Verif(relue != null && relue.Debit == 100000 && relue.CompteGeneral == "6052000" && relue.Libelle == "Facture SONABEL",
                   "ligne remise en saisie pour modification, relue à l'identique");

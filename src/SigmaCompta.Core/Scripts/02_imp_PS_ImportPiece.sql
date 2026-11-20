@@ -58,7 +58,8 @@ CREATE TYPE imp.TT_LigneEcriture AS TABLE
     Debit        numeric(24,6)  NOT NULL DEFAULT (0),
     Credit       numeric(24,6)  NOT NULL DEFAULT (0),
     EC_Echeance  date           NULL,                   -- NULL → 1753-01-01
-    EC_RefPiece  varchar(17)    NULL                    -- NULL → @EC_RefPiece
+    EC_RefPiece  varchar(17)    NULL,                   -- NULL → @EC_RefPiece
+    EC_Reference varchar(17)    NULL                    -- référence de la ligne (colonne « Référence »)
 );
 GO
 
@@ -78,7 +79,7 @@ CREATE PROCEDURE imp.PS_ImportPiece
     @EC_NoFin          int          = NULL OUTPUT
 AS
 BEGIN
-    /* SigmaCompta-Version: 1.3 */
+    /* SigmaCompta-Version: 1.4 */
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
@@ -113,7 +114,8 @@ BEGIN
         EC_Sens      smallint       NOT NULL,      -- 0 = débit, 1 = crédit
         EC_Montant   numeric(24,6)  NOT NULL,
         EC_Echeance  datetime       NOT NULL,
-        EC_RefPiece  varchar(17)    NOT NULL
+        EC_RefPiece  varchar(17)    NOT NULL,
+        EC_Reference varchar(17)    NOT NULL
     );
 
     /* ---------------------------------------------------------------------
@@ -141,7 +143,7 @@ BEGIN
                         THEN DATEFROMPARTS(YEAR(@EC_Date), MONTH(@EC_Date), 1) END;
 
     INSERT @L (NumLigne, CG_Saisi, CG_Num, CG_Type, CT_Saisi, CT_Num, CT_Prospect,
-               EC_Intitule, Debit, Credit, EC_Sens, EC_Montant, EC_Echeance, EC_RefPiece)
+               EC_Intitule, Debit, Credit, EC_Sens, EC_Montant, EC_Echeance, EC_RefPiece, EC_Reference)
     SELECT  l.NumLigne,
             s.CG, g.CG_Num, g.CG_Type,
             s.CT, t.CT_Num, t.CT_Prospect,
@@ -150,7 +152,8 @@ BEGIN
             CASE WHEN l.Debit <> 0 THEN 0 ELSE 1 END,
             CASE WHEN l.Debit <> 0 THEN l.Debit ELSE l.Credit END,
             ISNULL(CAST(l.EC_Echeance AS datetime), '17530101'),
-            ISNULL(NULLIF(LTRIM(RTRIM(l.EC_RefPiece)), ''), ISNULL(@EC_RefPiece, ''))
+            ISNULL(NULLIF(LTRIM(RTRIM(l.EC_RefPiece)), ''), ISNULL(@EC_RefPiece, '')),
+            ISNULL(LTRIM(RTRIM(l.EC_Reference)), '')
     FROM    @Lignes l
     CROSS APPLY (SELECT LTRIM(RTRIM(l.CG_Num))              AS CG,
                         NULLIF(LTRIM(RTRIM(l.CT_Num)), '')  AS CT) s
@@ -375,6 +378,7 @@ BEGIN
                     , cbEC_RefPiece                                 --#CB:F_ECRITUREC.cbEC_RefPiece
                     , cbCG_Num                                      --#CB:F_ECRITUREC.cbCG_Num
                     , cbCT_Num                                      --#CB:F_ECRITUREC.cbCT_Num
+                    , EC_Reference                                  --#SI:F_ECRITUREC.EC_Reference
                    )
             OUTPUT @k, inserted.cbMarq INTO @Marq (NumLigne, cbMarq)
             SELECT  @JO, 0, @JM_Date, DAY(@EC_Date), CAST(@EC_Date AS datetime), @Piece, l.EC_RefPiece,
@@ -384,6 +388,7 @@ BEGIN
                     , ISNULL(dbo.CB_FntStr(l.EC_RefPiece), 0x)      --#CB:F_ECRITUREC.cbEC_RefPiece
                     , ISNULL(dbo.CB_FntStr(l.CG_Num), 0x)           --#CB:F_ECRITUREC.cbCG_Num
                     , ISNULL(dbo.CB_FntStr(l.CT_Num), 0x)           --#CB:F_ECRITUREC.cbCT_Num
+                    , l.EC_Reference                                --#SI:F_ECRITUREC.EC_Reference
             FROM    @L l
             WHERE   l.NumLigne = @k;
 

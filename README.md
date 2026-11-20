@@ -5,7 +5,7 @@ Application WPF (.NET 8) de comptabilité générale qui travaille directement s
 **Modules disponibles**
 
 - **Accueil** (écran de démarrage) : tous les modules en tuiles, regroupés par rubrique (gestion quotidienne, états comptables, dossier, import d'écritures, outils). Les tuiles restent grisées tant que le dossier nécessaire n'est pas ouvert ; un bandeau indique l'état de la connexion et propose l'action suivante (se connecter, choisir le dossier, saisir une pièce).
-- **Comptabilité › Saisie** : pièces tapées au clavier dans un journal et un mois (comptes et tiers reconnus à la frappe, montant d'équilibre proposé, contrôles en direct), enregistrées par `imp.PS_ImportPiece` avec numérotation automatique. Les écritures déjà enregistrées du mois s'affichent en dessous.
+- **Comptabilité › Saisie** : écran disposé comme la fenêtre « Journal » des logiciels comptables. En tête, le solde du compte de trésorerie du journal (ancien solde, mouvements, nouveau solde). Une ligne de saisie alignée sur les colonnes (jour, n° pièce, n° facture, référence, compte général, compte tiers, libellé, échéance, débit, crédit) : comptes et tiers reconnus à la frappe dans une liste déroulante, montant d'équilibre proposé, bouton « Équilibrer ». Dessous, une seule grille : les écritures du journal pour le mois, suivies des lignes de la pièce en cours. En bas, les totaux du journal et le solde à équilibrer. Les pièces sont enregistrées par `imp.PS_ImportPiece` avec numérotation automatique.
 - **Comptabilité › Consultation** : écritures d'un compte général ou tiers sur une période, report à nouveau, solde progressif, filtre lettré / non lettré, export Excel, extrait de compte en PDF ou à imprimer. Lecture seule.
 - **Comptabilité › États comptables** : balance générale ou des tiers (six colonnes, total par classe ou par type de tiers), grand livre général ou des tiers, journaux et journal centralisateur, export Excel, PDF et impression (A4 paysage, en-tête société, pagination). Lecture seule.
 - **Import d'écritures** : import de fichiers Excel ou CSV via la procédure stockée `imp.PS_ImportPiece` (détail ci-dessous).
@@ -34,7 +34,7 @@ Deux paquets NuGet seulement : `Microsoft.Data.SqlClient` (accès SQL Server) et
 2. Vérifier que **SigmaCompta.App** est le projet de démarrage (il l'est par défaut), puis lancer avec F5.
 3. Pour diffuser l'application, générer en `Release` et copier le dossier `src\SigmaCompta.App\bin\Release\net8.0-windows\`. Le poste doit avoir le **runtime .NET 8 Desktop**. Pour s'en passer, publier en mode autonome : `dotnet publish src\SigmaCompta.App -c Release -r win-x64 --self-contained`.
 
-Le projet **SigmaCompta.Tests** est une console qui exécute 150 contrôles du cœur métier, sans SQL Server. Un code de sortie 0 signifie que tous les contrôles passent.
+Le projet **SigmaCompta.Tests** est une console qui exécute 156 contrôles du cœur métier, sans SQL Server. Un code de sortie 0 signifie que tous les contrôles passent.
 
 ## 2. Parcours dans l'application
 

@@ -53,6 +53,8 @@ namespace SigmaCompta.Core.Modeles
     {
         public string Compte { get; set; }
         public string Tiers { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference).</summary>
+        public string Reference { get; set; }
         public string Libelle { get; set; }
         public string Echeance { get; set; }
         public string Debit { get; set; }
@@ -67,6 +69,8 @@ namespace SigmaCompta.Core.Modeles
         public string IntituleCompte { get; set; }
         public string CompteTiers { get; set; }
         public string IntituleTiers { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference).</summary>
+        public string Reference { get; set; }
         public string Libelle { get; set; }
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }
@@ -82,12 +86,30 @@ namespace SigmaCompta.Core.Modeles
             {
                 Compte = CompteGeneral,
                 Tiers = CompteTiers,
+                Reference = Reference,
                 Libelle = Libelle,
                 Echeance = Echeance.HasValue ? Echeance.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : "",
                 Debit = Debit == 0 ? "" : Debit.ToString("0.##", CultureInfo.CurrentCulture),
                 Credit = Credit == 0 ? "" : Credit.ToString("0.##", CultureInfo.CurrentCulture)
             };
         }
+    }
+
+    /// <summary>Compte de trésorerie d'un journal : ancien solde, mouvements de la période, nouveau solde (positif = débiteur).</summary>
+    public sealed class SituationTresorerie
+    {
+        public string Compte { get; set; }
+        public string Intitule { get; set; }
+        public decimal AncienSolde { get; set; }
+        public decimal MouvementsDebit { get; set; }
+        public decimal MouvementsCredit { get; set; }
+        public decimal NouveauSolde { get { return AncienSolde + MouvementsDebit - MouvementsCredit; } }
+
+        // Affichage en deux colonnes Débit / Crédit, comme le logiciel comptable.
+        public decimal? AncienDebit { get { return AncienSolde > 0 ? AncienSolde : (decimal?)null; } }
+        public decimal? AncienCredit { get { return AncienSolde < 0 ? -AncienSolde : (decimal?)null; } }
+        public decimal? NouveauDebit { get { return NouveauSolde > 0 ? NouveauSolde : (decimal?)null; } }
+        public decimal? NouveauCredit { get { return NouveauSolde < 0 ? -NouveauSolde : (decimal?)null; } }
     }
 
     /// <summary>Écritures déjà enregistrées dans le journal et la période (brouillard).</summary>

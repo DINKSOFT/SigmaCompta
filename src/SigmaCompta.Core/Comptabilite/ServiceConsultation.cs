@@ -82,15 +82,15 @@ namespace SigmaCompta.Core.Comptabilite
         public static string RequeteLignes(NatureCompte nature, FiltreLettrage lettrage, bool colonneLettre, bool colonneLettrage)
         {
             var sb = new StringBuilder();
-            sb.Append("SELECT e.EC_No, e.JO_Num, e.EC_Date, e.EC_Piece, e.EC_RefPiece, e.CG_Num, e.CT_Num, e.EC_Intitule, ")
+            sb.Append("SELECT e.EC_No, e.JO_Num, " + SqlOutils.DateEcriture + " AS EC_Date, e.EC_Piece, e.EC_RefPiece, e.CG_Num, e.CT_Num, e.EC_Intitule, ")
               .Append("e.EC_Sens, e.EC_Montant, e.EC_Echeance, ")
               .Append(colonneLettrage ? "e.EC_Lettrage" : "CAST(NULL AS varchar(3)) AS EC_Lettrage").Append(", ")
               .Append(colonneLettre ? "e.EC_Lettre" : "CAST(NULL AS smallint) AS EC_Lettre")
               .Append(" FROM dbo.F_ECRITUREC e WHERE e.").Append(Colonne(nature))
-              .Append(" = @compte AND e.EC_Date >= @du AND e.EC_Date < @auExclu");
+              .Append(" = @compte AND " + SqlOutils.DateEcriture + " >= @du AND " + SqlOutils.DateEcriture + " < @auExclu");
             var condition = ConditionLettrage(lettrage, colonneLettre, colonneLettrage);
             if (condition != null) sb.Append(" AND ").Append(condition);
-            sb.Append(" ORDER BY e.EC_Date, e.JO_Num, e.EC_Piece, e.EC_No");
+            sb.Append(" ORDER BY " + SqlOutils.DateEcriture + ", e.JO_Num, e.EC_Piece, e.EC_No");
             return sb.ToString();
         }
 
@@ -99,7 +99,7 @@ namespace SigmaCompta.Core.Comptabilite
         {
             return "SELECT SUM(CASE WHEN e.EC_Sens = 0 THEN e.EC_Montant ELSE 0 END) AS Debit, " +
                    "SUM(CASE WHEN e.EC_Sens = 1 THEN e.EC_Montant ELSE 0 END) AS Credit " +
-                   "FROM dbo.F_ECRITUREC e WHERE e." + Colonne(nature) + " = @compte AND e.EC_Date >= @debut AND e.EC_Date < @du";
+                   "FROM dbo.F_ECRITUREC e WHERE e." + Colonne(nature) + " = @compte AND " + SqlOutils.DateEcriture + " >= @debut AND " + SqlOutils.DateEcriture + " < @du";
         }
 
         /// <summary>
