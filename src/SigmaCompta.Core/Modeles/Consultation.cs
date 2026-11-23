@@ -8,8 +8,11 @@ namespace SigmaCompta.Core.Modeles
     /// <summary>Compte général (CG_Num) ou compte tiers (CT_Num).</summary>
     public enum NatureCompte { General, Tiers }
 
-    /// <summary>Filtre de la consultation sur l'état de lettrage des lignes.</summary>
-    public enum FiltreLettrage { Toutes, NonLettrees, Lettrees }
+    /// <summary>
+    /// Type d'écriture affiché : toutes, ou selon l'état de lettrage, ou selon l'état de pointage
+    /// (panneau « Type d'écriture » de l'interrogation de compte).
+    /// </summary>
+    public enum FiltreLettrage { Toutes, NonLettrees, Lettrees, NonPointees, Pointees }
 
     /// <summary>Critères d'une consultation de compte.</summary>
     public sealed class FiltreConsultation
@@ -32,6 +35,8 @@ namespace SigmaCompta.Core.Modeles
         public DateTime Date { get; set; }
         public string Piece { get; set; }
         public string RefPiece { get; set; }
+        /// <summary>Référence de la ligne (EC_Reference), vide si la base n'a pas cette colonne.</summary>
+        public string Reference { get; set; }
         public string CompteGeneral { get; set; }
         public string CompteTiers { get; set; }
         /// <summary>L'autre compte de la ligne : le tiers pour un compte général, le compte collectif pour un tiers.</summary>
@@ -42,6 +47,9 @@ namespace SigmaCompta.Core.Modeles
         public DateTime? Echeance { get; set; }
         public string Lettrage { get; set; }
         public bool EstLettree { get; set; }
+        /// <summary>Code de pointage (EC_Pointage).</summary>
+        public string Pointage { get; set; }
+        public bool EstPointee { get; set; }
         /// <summary>Ligne de report à nouveau calculée (pas une écriture de la base).</summary>
         public bool EstReport { get; set; }
 
@@ -79,6 +87,21 @@ namespace SigmaCompta.Core.Modeles
 
         /// <summary>Colonnes de lettrage présentes dans la base.</summary>
         public bool LettrageDisponible { get; set; }
+        /// <summary>Colonnes de pointage présentes dans la base.</summary>
+        public bool PointageDisponible { get; set; }
+
+        /// <summary>
+        /// Mouvements du compte mois par mois, du début de l'exercice (ou de la période) jusqu'à la fin de la période,
+        /// toutes écritures confondues : ils ne dépendent pas du type d'écriture choisi.
+        /// </summary>
+        public List<CumulMensuel> Cumuls { get; } = new List<CumulMensuel>();
+        public decimal CumulsDebit { get; set; }
+        public decimal CumulsCredit { get; set; }
+        /// <summary>Solde réel du compte à la fin de la période, quel que soit le type d'écriture affiché.</summary>
+        public decimal SoldeCompte { get { return CumulsDebit - CumulsCredit; } }
+
+        /// <summary>Première lettre libre sur ce compte (A, B… Z, AA…), vide si le lettrage est absent de la base.</summary>
+        public string ProchaineLettre { get; set; }
 
         /// <summary>Lignes à afficher ou exporter : report en tête (s'il existe), puis les écritures.</summary>
         public IEnumerable<LigneConsultation> LignesAvecReport
@@ -99,6 +122,42 @@ namespace SigmaCompta.Core.Modeles
                 foreach (var l in Lignes) yield return l;
             }
         }
+    }
+
+    /// <summary>Mouvements d'un mois sur le compte consulté, avec le solde cumulé depuis le début.</summary>
+    public sealed class CumulMensuel
+    {
+        /// <summary>Premier jour du mois.</summary>
+        public DateTime Mois { get; set; }
+        public decimal Debit { get; set; }
+        public decimal Credit { get; set; }
+        public decimal Solde { get { return Debit - Credit; } }
+        public decimal SoldeCumule { get; set; }
+
+        public string Libelle
+        {
+            get
+            {
+                var t = Mois.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("fr-FR"));
+                return t.Length == 0 ? t : char.ToUpperInvariant(t[0]) + t.Substring(1);
+            }
+        }
+
+        public decimal? DebitAffiche { get { return Debit == 0 ? (decimal?)null : Debit; } }
+        public decimal? CreditAffiche { get { return Credit == 0 ? (decimal?)null : Credit; } }
+        public string SoldeLibelle { get { return Montants.AvecSens(Solde); } }
+        public string SoldeCumuleLibelle { get { return Montants.AvecSens(SoldeCumule); } }
+    }
+
+    /// <summary>Total des lignes cochées pour le lettrage.</summary>
+    public sealed class SelectionLettrage
+    {
+        public int Nombre { get; set; }
+        public decimal Debit { get; set; }
+        public decimal Credit { get; set; }
+        public decimal Solde { get { return Debit - Credit; } }
+        /// <summary>Au moins deux lignes et débit = crédit : la sélection peut être lettrée.</summary>
+        public bool EstEquilibree { get { return Nombre >= 2 && Debit == Credit; } }
     }
 
     public static class Montants
