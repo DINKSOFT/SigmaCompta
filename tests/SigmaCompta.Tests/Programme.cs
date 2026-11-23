@@ -281,7 +281,58 @@ namespace SigmaCompta.Tests
             var xc = Path.Combine(dir, "consultation.xlsx");
             ExportConsultation.Ecrire(xc, rc);
             var txc = LecteurSource.Lire(xc, new SourceProfil());
-            Verif(txc.Lignes.Count == 5 && txc.Entetes[9] == "Solde", "export Excel : report + 2 lignes + 2 totaux : " + txc.Lignes.Count);
+            Verif(txc.Lignes.Count == 5 && txc.Entetes[10] == "Solde" && txc.Entetes[12] == "Pointage",
+                  "export Excel : report + 2 lignes + 2 totaux : " + txc.Lignes.Count);
+
+            Console.WriteLine("== Interrogation de compte : pointage, cumuls, lettrage");
+            var colTout = new ServiceConsultation.ColonnesEcriture { Lettre = true, Lettrage = true, Point = true, Pointage = true, Reference = true };
+            var sqlP = ServiceConsultation.RequeteLignes(NatureCompte.General, FiltreLettrage.NonPointees, colTout);
+            Verif(sqlP.Contains("NOT (ISNULL(e.EC_Point, 0) <> 0)") && sqlP.Contains("e.EC_Reference, ") && sqlP.Contains("e.EC_Pointage, ")
+                  && !sqlP.Contains("EC_Lettre, 0) <> 0"), "requête : écritures non pointées");
+            var colAucune = new ServiceConsultation.ColonnesEcriture();
+            Verif(ServiceConsultation.Condition(FiltreLettrage.Pointees, colAucune) == "1 = 0"
+                  && ServiceConsultation.Condition(FiltreLettrage.NonPointees, colAucune) == null
+                  && ServiceConsultation.Condition(FiltreLettrage.Pointees, new ServiceConsultation.ColonnesEcriture { Pointage = true }) == "ISNULL(e.EC_Pointage, '') <> ''",
+                  "pointage : colonne EC_Point, sinon EC_Pointage, sinon rien");
+            var sqlSans = ServiceConsultation.RequeteLignes(NatureCompte.Tiers, FiltreLettrage.Toutes, colAucune);
+            Verif(sqlSans.Contains("CAST(NULL AS varchar(17)) AS EC_Reference") && sqlSans.Contains("CAST(NULL AS smallint) AS EC_Point")
+                  && sqlSans.Contains("CAST(NULL AS varchar(3)) AS EC_Pointage"), "colonnes facultatives absentes remplacées par NULL");
+            var sqlCumuls = ServiceConsultation.RequeteCumuls(NatureCompte.General);
+            Verif(sqlCumuls.Contains("GROUP BY YEAR(DATEADD(day, e.EC_Jour - 1, e.JM_Date)), MONTH(") && !sqlCumuls.Contains("e.EC_Date")
+                  && sqlCumuls.Contains("e.CG_Num = @compte"), "requête des cumuls mensuels sur la date comptable");
+            Verif(ServiceConsultation.RequeteLettres(NatureCompte.Tiers).Contains("e.CT_Num = @compte"), "requête des lettres du tiers");
+
+            var rcm = new ResultatConsultation();
+            var mvts = new Dictionary<Tuple<int, int>, Tuple<decimal, decimal>>
+            {
+                { Tuple.Create(2026, 1), Tuple.Create(1000m, 200m) },
+                { Tuple.Create(2026, 3), Tuple.Create(0m, 1500m) }
+            };
+            ServiceConsultation.CalculerCumuls(rcm, new DateTime(2026, 1, 1), new DateTime(2026, 4, 15), mvts);
+            Verif(rcm.Cumuls.Count == 4 && rcm.Cumuls[1].Debit == 0 && rcm.Cumuls[1].SoldeCumule == 800 && rcm.Cumuls[2].SoldeCumule == -700
+                  && rcm.Cumuls[3].Mois == new DateTime(2026, 4, 1), "cumuls : tous les mois, solde cumulé");
+            Verif(rcm.CumulsDebit == 1000 && rcm.CumulsCredit == 1700 && rcm.SoldeCompte == -700 && rcm.Cumuls[0].Libelle == "Janvier 2026",
+                  "cumuls : totaux et solde du compte");
+
+            Verif(ServiceConsultation.LettreSuivante(new string[0]) == "A" && ServiceConsultation.LettreSuivante(new[] { "A", "c", "B" }) == "D"
+                  && ServiceConsultation.LettreSuivante(new[] { "Z", "Y" }) == "AA" && ServiceConsultation.LettreSuivante(new[] { "AZ", "Z" }) == "BA"
+                  && ServiceConsultation.LettreSuivante(new[] { "ZZ" }) == "AAA" && ServiceConsultation.LettreSuivante(new[] { "ZZZ" }) == ""
+                  && ServiceConsultation.LettreSuivante(new[] { "12", " ", null, "B" }) == "C", "lettre suivante : A… Z, AA… ZZ, AAA");
+
+            var lA = new LigneConsultation { Debit = 4500, Libelle = "Vente de produits", Piece = "965", RefPiece = "00393", Journal = "CAI", Date = new DateTime(2026, 7, 31) };
+            var lB = new LigneConsultation { Credit = 4500, Libelle = "Electricite SONABEL", Piece = "966", Reference = "s/n" };
+            var sel = ServiceConsultation.TotaliserSelection(new[] { lA, lB, new LigneConsultation { EstReport = true, Debit = 99 } });
+            Verif(sel.Nombre == 2 && sel.Debit == 4500 && sel.Credit == 4500 && sel.EstEquilibree, "sélection équilibrée, report ignoré");
+            Verif(!ServiceConsultation.TotaliserSelection(new[] { lA }).EstEquilibree, "une seule ligne : pas lettrable");
+            Verif(ServiceConsultation.Correspond(lA, "vente 965") && ServiceConsultation.Correspond(lA, "4500") && ServiceConsultation.Correspond(lA, "310726")
+                  && ServiceConsultation.Correspond(lB, "SONABEL s/n") && !ServiceConsultation.Correspond(lA, "vente sonabel")
+                  && ServiceConsultation.Correspond(lA, "  ") && !ServiceConsultation.Correspond(new LigneConsultation { EstReport = true, Libelle = "Report" }, "report"),
+                  "recherche par mots dans la liste");
+            Verif(ServiceConsultation.LibelleFiltre(FiltreLettrage.NonPointees) == "Écritures non pointées", "libellé du type d'écriture");
+            var lgT = new List<ElementCompte> { new ElementCompte(NatureCompte.General, "5711000", "Caisse siège social"), new ElementCompte(NatureCompte.General, "571", "Caisse") };
+            Verif(ServiceConsultation.Trouver(lgT, "571") == lgT[1] && ServiceConsultation.Trouver(lgT, "5711") == lgT[0]
+                  && ServiceConsultation.Trouver(lgT, "siège") == lgT[0] && ServiceConsultation.Trouver(lgT, "5711000 — Caisse siège social") == lgT[0]
+                  && ServiceConsultation.Trouver(lgT, "999") == null, "compte trouvé par n° exact, début de n° ou intitulé");
 
             Console.WriteLine("== États comptables");
             var refE = new Referentiel();
@@ -423,6 +474,7 @@ namespace SigmaCompta.Tests
                 sqlB, sqlG, ServiceEtats.RequeteJournal(true), ServiceEtats.RequeteCentralisateur(true),
                 ServiceEtats.RequeteOuverturesGrandLivre(NatureCompte.Tiers, new PlageComptes("", ""), true),
                 ServiceConsultation.RequeteLignes(NatureCompte.General, FiltreLettrage.Toutes, true, true), ServiceConsultation.RequeteReport(NatureCompte.Tiers),
+                ServiceConsultation.RequeteCumuls(NatureCompte.Tiers),
                 ServiceSaisie.RequeteSoldeAnterieur(true, true)
             };
             Verif(requetesDates.All(q => !q.Contains("e.EC_Date")) && ServiceEtats.RequeteJournal(false).Contains("DATEADD(day, e.EC_Jour - 1, e.JM_Date) AS EC_Date")

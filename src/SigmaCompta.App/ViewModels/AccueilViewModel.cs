@@ -113,7 +113,7 @@ namespace SigmaCompta.App.ViewModels
             Sections.Clear();
             Sections.Add(new SectionAccueil("Gestion quotidienne",
                 new TuileAccueil("Saisie d'une pièce", "", "Saisir une pièce au clavier dans un journal. " + aideDossier, _saisie, naviguer),
-                new TuileAccueil("Consultation des comptes", "", "Écritures d'un compte général ou tiers, solde progressif. " + aideDossier, consultation, naviguer),
+                new TuileAccueil("Consultation des comptes", "", "Interrogation d'un compte général ou tiers : écritures, cumuls mensuels, préparation du lettrage. " + aideDossier, consultation, naviguer),
                 new TuileAccueil("Historique des imports", "", "Imports réalisés depuis ce poste.", principal.EtapeHistorique, naviguer)));
 
             Sections.Add(new SectionAccueil("États comptables",

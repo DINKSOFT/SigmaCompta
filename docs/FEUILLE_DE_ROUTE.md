@@ -57,10 +57,10 @@ Point d'attention : le serveur de SODEM est un **SQL Server 2012 RTM (11.0.2100)
 | Lot | Contenu | Écrit dans la base ? | État |
 |---|---|---|---|
 | 0 | Migration .NET 8, navigation par modules | Non | **Livré** |
-| 1 | **Consultation des comptes** : compte général ou tiers, période, report à nouveau, solde progressif, filtre lettré / non lettré, export Excel | Non | **Livré (v1)** |
+| 1 | **Consultation des comptes** : compte général ou tiers, période, report à nouveau, solde progressif, filtre lettré / non lettré, export Excel | Non | **Livré (v2)** — écran « Interrogation et lettrage » : recherche par mots, pointage, cumuls mensuels, sélection des lignes et solde de lettrage |
 | 2 | **États comptables** : balance générale et balance tiers (six colonnes), grand livre, journaux, journal centralisateur, export Excel | Non | **Livré** — export Excel, PDF et impression |
 | 3 | **Saisie des écritures** : saisie par journal et par mois, comptes et tiers proposés à la frappe, contrôles en direct (`Validateur`), numérotation selon le journal, enregistrement par `imp.PS_ImportPiece` (déjà en place) | Oui, procédure existante | **Livré (v1)** — création de pièces ; modification et suppression de pièces existantes à venir |
-| 4 | **Lettrage** : sélection de lignes équilibrées, lettrage et délettrage | Oui, procédure à créer (`imp.PS_Lettrer`) après observation du logiciel comptable | À faire |
+| 4 | **Lettrage** : sélection de lignes équilibrées, lettrage et délettrage | Oui, procédure à créer (`imp.PS_Lettrer`) après observation du logiciel comptable | À faire — l'écran est prêt (cases à cocher, solde de lettrage, prochaine lettre) ; reste à brancher le bouton « Lettrer » |
 | 5 | **Plan comptable et tiers** : création et modification des comptes généraux, des tiers et des journaux | Oui, procédures à créer après observation (`F_COMPTEG`, `F_COMPTET`, clés `cb*`, déclencheurs) | À faire |
 | Ensuite | Clôture et à-nouveaux, états financiers SYSCOHADA, rapprochement bancaire, déclarations de TVA | — | — |
 
@@ -73,7 +73,7 @@ Les lots 1 et 2 ne font que lire : ils sont sans risque pour la base de producti
 - **Norme IFRS (`EC_Norme`).** La consultation prend toutes les écritures, sans filtre de norme. À revoir si un dossier utilise la gestion IFRS.
 - **Saisie.** Une pièce enregistrée se corrige pour l'instant dans le logiciel comptable : la modification et la suppression demandent de nouvelles procédures, à écrire après observation du logiciel comptable (comme le lettrage). Pas de ventilation analytique ni de contrepartie automatique sur les journaux de trésorerie : la ligne de banque ou de caisse se saisit comme les autres.
 - **Journal des à-nouveaux.** La balance et le grand livre classent en solde d'ouverture les écritures du journal choisi comme journal des à-nouveaux (proposé d'après son code RAN/AN/ANO ou son intitulé). Sans ce choix, les à-nouveaux d'une période qui commence avec l'exercice sont comptés dans les mouvements. À confirmer sur la base de SODEM.
-- **Lettrage.** La v1 de la consultation lit `EC_Lettre` (lettré oui/non) et `EC_Lettrage` (code). Le cas du lettrage partiel reste à confirmer sur une base réelle.
+- **Lettrage et pointage.** La consultation lit `EC_Lettre` (lettré oui/non) et `EC_Lettrage` (code), `EC_Point` et `EC_Pointage` pour le pointage, chacune seulement si la base l'a. La prochaine lettre est la suivante de la plus grande déjà utilisée sur le compte (A… Z, AA… ZZ, AAA…). Le cas du lettrage partiel (lettres minuscules ?) et la séquence exacte des lettres restent à confirmer sur une base réelle.
 - **Licence.** Travail d'interopérabilité : vérifier les conditions de licence du logiciel comptable avant un usage commercial.
 
 ## 5. Compiler après la migration

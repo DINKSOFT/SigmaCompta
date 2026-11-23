@@ -78,7 +78,7 @@ namespace SigmaCompta.App.ViewModels
             Modules = new ObservableCollection<EtapeViewModel>
             {
                 new EtapeViewModel(12, "Saisie", "Pièces au clavier", "\uE70F", Saisie, false) { Rubrique = "Comptabilité" },
-                new EtapeViewModel(10, "Consultation", "Comptes & solde progressif", "\uE721", Consultation, false) { Rubrique = "Comptabilité" },
+                new EtapeViewModel(10, "Consultation", "Interrogation & lettrage", "\uE721", Consultation, false) { Rubrique = "Comptabilité" },
                 new EtapeViewModel(11, "États comptables", "Balance, grand livre, journaux", "\uE8A5", Etats, false) { Rubrique = "Comptabilité" },
             };
 

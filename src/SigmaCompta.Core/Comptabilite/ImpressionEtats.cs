@@ -268,8 +268,7 @@ namespace SigmaCompta.Core.Comptabilite
         {
             if (c == null) throw new ArgumentNullException("c");
             var p = new ParametresEtat { Etat = TypeEtat.GrandLivre, Nature = c.Nature, Du = c.Du, Au = c.Au, CompteDe = c.Compte, CompteA = c.Compte };
-            var filtre = c.Lettrage == FiltreLettrage.NonLettrees ? " · lignes non lettrées"
-                       : c.Lettrage == FiltreLettrage.Lettrees ? " · lignes lettrées" : "";
+            var filtre = c.Lettrage == FiltreLettrage.Toutes ? "" : " · " + ServiceConsultation.LibelleFiltre(c.Lettrage).ToLowerInvariant();
             var r = new ResultatEtat
             {
                 Parametres = p,
